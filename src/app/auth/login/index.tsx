@@ -1,98 +1,106 @@
-import * as Device from "expo-device";
-import { Platform, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { AnimatedIcon } from "@/components/animated-icon";
-import { HintRow } from "@/components/hint-row";
+import { AuthFooter } from "@/components/auth/auth-footer";
+import { AuthHeader } from "@/components/auth/auth-header";
+import { AuthScreen } from "@/components/auth/auth-screen";
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { WebBadge } from "@/components/web-badge";
-import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TextField } from "@/components/ui/text-field";
+import { Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
-function getDevMenuHint() {
-  if (Platform.OS === "web") {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === "android" ? "cmd+m (or ctrl+m)" : "cmd+d";
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+export default function LoginScreen() {
+  const theme = useTheme();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default function HomeScreen() {
+  function handleLogin() {
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password");
+      return;
+    }
+    setError(null);
+    // TODO: validar credenciales contra el backend
+    router.replace("/");
+  }
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Kampus
+    <AuthScreen>
+      <AuthHeader
+        title="Welcome back"
+        subtitle="Sign in with your school email and password to continue"
+      />
+
+      <View style={styles.form}>
+        <TextField
+          label="Email"
+          icon={{ ios: "envelope", android: "mail", web: "mail" }}
+          placeholder="Email address"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
+        />
+        <TextField
+          label="Password"
+          icon={{ ios: "lock", android: "lock", web: "lock" }}
+          placeholder="Enter password"
+          value={password}
+          onChangeText={setPassword}
+          password
+          autoComplete="password"
+          textContentType="password"
+        />
+
+        <View style={styles.options}>
+          <Checkbox label="Remember me" value={remember} onValueChange={setRemember} />
+          {/* TODO: pantalla de recuperar contraseña */}
+          <Pressable hitSlop={Spacing.two}>
+            <ThemedText type="small" style={[styles.forgot, { color: theme.text }]}>
+              Forgot password?
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        {error && (
+          <ThemedText type="small" themeColor="danger" style={styles.error}>
+            {error}
           </ThemedText>
-        </ThemedView>
+        )}
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        <Button title="Log in" onPress={handleLogin} style={styles.button} />
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === "web" && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <AuthFooter question="Don't have an account?" linkText="Sign up" href="/auth/register" />
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  form: {
     flex: 1,
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: "center",
     gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
+  options: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
-  title: {
+  forgot: {
+    fontSize: 13,
+  },
+  error: {
+    fontSize: 13,
     textAlign: "center",
   },
-  code: {
-    textTransform: "uppercase",
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: "stretch",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  button: {
+    marginTop: Spacing.two,
   },
 });
