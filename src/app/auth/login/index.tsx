@@ -32,13 +32,13 @@ export default function LoginScreen() {
   return (
     <AuthScreen>
       <AuthHeader
-        title="Welcome back"
-        subtitle="Sign in with your school email and password to continue"
+        title="Bienvenido De Vuelta!"
+        subtitle="Inicia sesión con tu correo institucional."
       />
 
       <View style={styles.form}>
         <TextField
-          label="Email"
+          label="Correo Institucional"
           icon={{ ios: "envelope", android: "mail", web: "mail" }}
           placeholder="Email address"
           value={email}
@@ -49,7 +49,7 @@ export default function LoginScreen() {
           textContentType="emailAddress"
         />
         <TextField
-          label="Password"
+          label="Contraseña"
           icon={{ ios: "lock", android: "lock", web: "lock" }}
           placeholder="Enter password"
           value={password}
@@ -60,11 +60,18 @@ export default function LoginScreen() {
         />
 
         <View style={styles.options}>
-          <Checkbox label="Remember me" value={remember} onValueChange={setRemember} />
+          <Checkbox
+            label="Recordar"
+            value={remember}
+            onValueChange={setRemember}
+          />
           {/* TODO: pantalla de recuperar contraseña */}
           <Pressable hitSlop={Spacing.two}>
-            <ThemedText type="small" style={[styles.forgot, { color: theme.text }]}>
-              Forgot password?
+            <ThemedText
+              type="small"
+              style={[styles.forgot, { color: theme.text }]}
+            >
+              Olvidaste tu contraseña?
             </ThemedText>
           </Pressable>
         </View>
@@ -75,10 +82,18 @@ export default function LoginScreen() {
           </ThemedText>
         )}
 
-        <Button title="Log in" onPress={handleLogin} style={styles.button} />
+        <Button
+          title="Inciar Sesión"
+          onPress={handleLogin}
+          style={styles.button}
+        />
       </View>
 
-      <AuthFooter question="Don't have an account?" linkText="Sign up" href="/auth/register" />
+      <AuthFooter
+        question="No tienes una cuenta?"
+        linkText="Registrate"
+        href="/auth/register"
+      />
     </AuthScreen>
   );
 }

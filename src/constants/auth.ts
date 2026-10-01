@@ -2,7 +2,11 @@
  * Dominios de correo institucional aceptados en el registro.
  * TODO: confirmar los dominios exactos de cada institución.
  */
-export const AllowedEmailDomains = ["utt.edu.mx", "uadec.edu.mx", "lalaguna.tecnm.mx"];
+export const AllowedEmailDomains = [
+  "utt.edu.mx",
+  "uadec.edu.mx",
+  "lalaguna.tecnm.mx",
+];
 
 export const MinPasswordLength = 8;
 

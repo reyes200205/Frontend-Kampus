@@ -13,14 +13,12 @@ import { isInstitutionalEmail, MinPasswordLength } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
 
 type FormErrors = Partial<
-  Record<
-    "fullName" | "email" | "password" | "confirmPassword" | "terms",
-    string
-  >
+  Record<"firstName" | "lastName" | "email" | "password" | "terms", string>
 >;
 
 export default function RegisterScreen() {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
@@ -30,14 +28,14 @@ export default function RegisterScreen() {
 
   function validate() {
     const next: FormErrors = {};
-    if (!fullName.trim()) next.fullName = "Enter your full name";
+    if (!firstName.trim()) next.firstName = "Ingresa tu nombre";
+    if (!lastName.trim()) next.lastName = "ingresa tu apellido";
     if (!isInstitutionalEmail(email))
-      next.email = "Use your UTT, UAdeC or Tec. Laguna email";
+      next.email = "Usa un correo de  UTT, UAdeC or Tec. Laguna";
     if (password.length < MinPasswordLength)
-      next.password = `Use at least ${MinPasswordLength} characters`;
+      next.password = `Usa minimo ${MinPasswordLength} Caracteres`;
     if (!acceptedPrivacy || !acceptedGuidelines)
-      next.terms =
-        "You must accept the privacy notice and community guidelines";
+      next.terms = "Por favor acepta los terminos y condiciones de uso";
     return next;
   }
 
@@ -76,29 +74,41 @@ export default function RegisterScreen() {
     <AuthScreen>
       <AuthHeader
         withLogo={false}
-        title="Create your account"
-        subtitle="Join your campus community with your school email"
+        title="Crea tu cuenta"
+        subtitle="Unete con tu correo institucional"
       />
 
       <View style={styles.form}>
         <TextField
-          label="Full name"
+          label="Nombre"
           icon={{ ios: "person", android: "person", web: "person" }}
-          placeholder="Full name"
-          value={fullName}
-          onChangeText={setFullName}
-          error={errors.fullName}
+          placeholder="Nombre"
+          value={firstName}
+          onChangeText={setFirstName}
+          error={errors.firstName}
           autoCapitalize="words"
           autoComplete="name"
           textContentType="name"
         />
         <TextField
-          label="School email"
+          label="Apellido"
+          icon={{ ios: "person", android: "person", web: "person" }}
+          placeholder="Apellido"
+          value={lastName}
+          onChangeText={setLastName}
+          error={errors.lastName}
+          autoCapitalize="words"
+          autoComplete="name"
+          textContentType="name"
+        />
+
+        <TextField
+          label="Correo Institucional"
           icon={{ ios: "envelope", android: "mail", web: "mail" }}
-          placeholder="Email address"
+          placeholder="matricula@utt.edu.mx"
           value={email}
           onChangeText={setEmail}
-          hint="Only UTT, UAdeC and Tec. Laguna emails"
+          hint="UTT, UAdeC y Tec. Laguna"
           error={errors.email}
           keyboardType="email-address"
           autoCapitalize="none"
@@ -106,7 +116,7 @@ export default function RegisterScreen() {
           textContentType="emailAddress"
         />
         <TextField
-          label="Password"
+          label="Contraseña"
           icon={{ ios: "lock", android: "lock", web: "lock" }}
           placeholder="Enter password"
           value={password}
@@ -119,12 +129,12 @@ export default function RegisterScreen() {
 
         <View style={styles.checks}>
           <Checkbox
-            label="I accept the privacy notice"
+            label="Acepto los terminos privacidad"
             value={acceptedPrivacy}
             onValueChange={setAcceptedPrivacy}
           />
           <Checkbox
-            label="I accept the community guidelines"
+            label="Acepto reglas comunidad"
             value={acceptedGuidelines}
             onValueChange={setAcceptedGuidelines}
           />
@@ -136,15 +146,15 @@ export default function RegisterScreen() {
         </View>
 
         <Button
-          title="Sign up"
+          title="Iniciar Sesión"
           onPress={handleRegister}
           style={styles.button}
         />
       </View>
 
       <AuthFooter
-        question="Already have an account?"
-        linkText="Log in"
+        question="Ya tienes una cuenta?"
+        linkText="Incia sesión"
         href="/auth/login"
       />
     </AuthScreen>
