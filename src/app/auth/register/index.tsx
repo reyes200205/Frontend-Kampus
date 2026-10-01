@@ -55,15 +55,15 @@ export default function RegisterScreen() {
     return (
       <AuthScreen>
         <AuthHeader
-          title="Almost there"
-          subtitle="Verify your school email to activate your Kampus account"
+          title="Verificar cuenta"
+          subtitle="Por favor verifica tu correo electronico para activar tu cuenta"
         />
         <View style={styles.form}>
           <CheckEmailCard email={email.trim()} onResend={handleResend} />
         </View>
         <AuthFooter
-          question="Already verified?"
-          linkText="Log in"
+          question="Tu cuenta ya esta verificada?"
+          linkText="Iniciar sesión"
           href="/auth/login"
         />
       </AuthScreen>
@@ -146,7 +146,7 @@ export default function RegisterScreen() {
         </View>
 
         <Button
-          title="Iniciar Sesión"
+          title="Registrarse"
           onPress={handleRegister}
           style={styles.button}
         />

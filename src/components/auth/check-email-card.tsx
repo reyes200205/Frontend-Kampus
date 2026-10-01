@@ -24,27 +24,31 @@ export function CheckEmailCard({ email, onResend }: CheckEmailCardProps) {
         <SymbolView
           name={{ ios: "envelope", android: "mail", web: "mail" }}
           size={28}
-          tintColor={theme.accent}
+          tintColor={theme.border}
         />
       </View>
 
       <View style={styles.texts}>
         <ThemedText type="subtitle" style={styles.title}>
-          Check your email
+          Revisa tu correo
         </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-          We sent a verification link to{" "}
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          style={styles.center}
+        >
+          Nostros enviamos un correo a{" "}
           <ThemedText type="smallBold">{email}</ThemedText>
         </ThemedText>
       </View>
 
       <View style={styles.resend}>
         <ThemedText type="small" themeColor="textSecondary">
-          Didn&apos;t get it?
+          No recibiste el correo?
         </ThemedText>
         <Pressable onPress={onResend} hitSlop={Spacing.two}>
           <ThemedText type="smallBold" style={{ color: theme.accent }}>
-            Resend email
+            Renviar Correo
           </ThemedText>
         </Pressable>
       </View>

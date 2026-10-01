@@ -1,13 +1,12 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -15,17 +14,14 @@ import { useTheme } from "@/hooks/use-theme";
 export default function LoginScreen() {
   const theme = useTheme();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function handleLogin() {
-    if (!email.trim() || !password) {
+    if (!email.trim()) {
       setError("Please enter your email and password");
       return;
     }
     setError(null);
-    // TODO: validar credenciales contra el backend
     router.replace("/");
   }
 
@@ -48,33 +44,6 @@ export default function LoginScreen() {
           autoComplete="email"
           textContentType="emailAddress"
         />
-        <TextField
-          label="Contraseña"
-          icon={{ ios: "lock", android: "lock", web: "lock" }}
-          placeholder="Enter password"
-          value={password}
-          onChangeText={setPassword}
-          password
-          autoComplete="password"
-          textContentType="password"
-        />
-
-        <View style={styles.options}>
-          <Checkbox
-            label="Recordar"
-            value={remember}
-            onValueChange={setRemember}
-          />
-          {/* TODO: pantalla de recuperar contraseña */}
-          <Pressable hitSlop={Spacing.two}>
-            <ThemedText
-              type="link"
-              style={[styles.forgot, { color: theme.text }]}
-            >
-              Olvidaste tu contraseña?
-            </ThemedText>
-          </Pressable>
-        </View>
 
         {error && (
           <ThemedText type="small" themeColor="danger" style={styles.error}>
@@ -83,7 +52,7 @@ export default function LoginScreen() {
         )}
 
         <Button
-          title="Inciar Sesión"
+          title="Enviar Correo"
           onPress={handleLogin}
           style={styles.button}
         />
