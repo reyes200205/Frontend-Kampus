@@ -21,7 +21,7 @@ export default function LoginScreen() {
 
   function handleLogin() {
     if (!email.trim() || !password) {
-      setError("Please enter your email and password");
+      setError("Por favor ingresa tu correo y contraseña");
       return;
     }
     setError(null);
