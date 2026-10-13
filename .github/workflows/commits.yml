@@ -1,0 +1,36 @@
+name: Commits
+
+# Revisa que todos los commits de un PR sigan la convención `tipo: descripción`.
+# Sin esto, el versionado automático no sabe qué versión publicar.
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  convencion:
+    name: Convención de commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preparar pnpm
+        # Toma la versión de pnpm del campo packageManager de package.json.
+        uses: pnpm/action-setup@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Revisar los commits del PR
+        run: >-
+          pnpm exec commitlint --verbose
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
