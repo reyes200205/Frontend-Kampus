@@ -39,23 +39,48 @@ const BaseColors = {
  */
 const Accents = {
   yellow: {
-    light: { accent: "#D4A20B", onAccent: "#1A1A1E", glow: "rgba(245, 197, 24, 0.35)" },
-    dark: { accent: "#cdca1cff", onAccent: "#ffffff", glow: "rgba(230, 208, 11, 0.92)" },
+    light: {
+      accent: "#D4A20B",
+      onAccent: "#1A1A1E",
+      glow: "rgba(245, 197, 24, 0.35)",
+    },
+    dark: {
+      accent: "#cdca1cff",
+      onAccent: "#ffffff",
+      glow: "rgba(230, 208, 11, 0.92)",
+    },
   },
   blue: {
-    light: { accent: "#2563EB", onAccent: "#ffffff", glow: "rgba(37, 99, 235, 0.18)" },
-    dark: { accent: "#3B82F6", onAccent: "#ffffff", glow: "rgba(59, 130, 246, 0.6)" },
+    light: {
+      accent: "#2563EB",
+      onAccent: "#ffffff",
+      glow: "rgba(37, 99, 235, 0.18)",
+    },
+    dark: {
+      accent: "#3B82F6",
+      onAccent: "#ffffff",
+      glow: "rgba(59, 130, 246, 0.6)",
+    },
   },
   green: {
-    light: { accent: "#16A34A", onAccent: "#ffffff", glow: "rgba(22, 163, 74, 0.18)" },
-    dark: { accent: "#22C55E", onAccent: "#06120A", glow: "rgba(34, 197, 94, 0.6)" },
+    light: {
+      accent: "#16A34A",
+      onAccent: "#ffffff",
+      glow: "rgba(22, 163, 74, 0.18)",
+    },
+    dark: {
+      accent: "#22C55E",
+      onAccent: "#06120A",
+      glow: "rgba(34, 197, 94, 0.6)",
+    },
   },
 };
 
 export type ThemeMode = keyof typeof BaseColors;
 export type ThemeAccent = keyof typeof Accents;
 export type ThemeName = `${ThemeMode}-${ThemeAccent}`;
-export type Palette = (typeof BaseColors)[ThemeMode] & (typeof Accents)[ThemeAccent][ThemeMode];
+export type Palette = (typeof BaseColors)[ThemeMode] &
+  (typeof Accents)[ThemeAccent][ThemeMode];
 
 function createTheme(mode: ThemeMode, accent: ThemeAccent): Palette {
   return { ...BaseColors[mode], ...Accents[accent][mode] };
@@ -75,10 +100,12 @@ export const Themes: Record<ThemeName, Palette> = {
  * Tema que usa toda la app. Cámbialo aquí para probar otro:
  * "light-yellow" | "light-blue" | "light-green" | "dark-yellow" | "dark-blue" | "dark-green"
  */
-export const ActiveTheme: ThemeName = "dark-yellow";
+export const ActiveTheme: ThemeName = "dark-blue";
 
 /** Modo del tema activo, para la barra de estado y la navegación. */
-export const ActiveThemeMode: ThemeMode = ActiveTheme.startsWith("light") ? "light" : "dark";
+export const ActiveThemeMode: ThemeMode = ActiveTheme.startsWith("light")
+  ? "light"
+  : "dark";
 
 /** Familias de Sora cargadas en `src/app/_layout.tsx`. */
 export const FontFamily = {

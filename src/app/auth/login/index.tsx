@@ -40,7 +40,7 @@ export default function LoginScreen() {
         <TextField
           label="Correo Institucional"
           icon={{ ios: "envelope", android: "mail", web: "mail" }}
-          placeholder="Email address"
+          placeholder="matricula@utt.edu.mx"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -51,7 +51,7 @@ export default function LoginScreen() {
         <TextField
           label="Contraseña"
           icon={{ ios: "lock", android: "lock", web: "lock" }}
-          placeholder="Enter password"
+          placeholder="********"
           value={password}
           onChangeText={setPassword}
           password
