@@ -1,56 +1,218 @@
-# Welcome to your Expo app 👋
+# Kampus — Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App móvil de **Kampus** hecha con [Expo](https://expo.dev) (SDK 57), React Native y [Expo Router](https://docs.expo.dev/router/introduction/) (rutas basadas en archivos).
 
-## Get started
+---
 
-1. Install dependencies
+## Índice
 
-   ```bash
-   npm install
-   ```
+1. [Requisitos](#1-requisitos)
+2. [Instalación](#2-instalación)
+3. [Ejecutar el proyecto](#3-ejecutar-el-proyecto)
+4. [Ver la app en tu celular](#4-ver-la-app-en-tu-celular)
+5. [Otras formas de verla](#5-otras-formas-de-verla)
+6. [Scripts disponibles](#6-scripts-disponibles)
+7. [Estructura del proyecto](#7-estructura-del-proyecto)
+8. [Solución de problemas](#8-solución-de-problemas)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 1. Requisitos
 
-In the output, you'll find options to open the app in a
+Instala esto en tu computadora:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Herramienta | Versión | Cómo verificar |
+| --- | --- | --- |
+| [Node.js](https://nodejs.org/) | 20 LTS o superior (recomendado 22 o 24) | `node -v` |
+| [pnpm](https://pnpm.io/installation) | 10 o superior | `pnpm -v` |
+| [Git](https://git-scm.com/) | cualquiera reciente | `git --version` |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Si no tienes pnpm:
 
 ```bash
-npm run reset-project
+npm install -g pnpm
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Y en tu celular:
 
-### Other setup steps
+- **Expo Go**: [Android (Play Store)](https://play.google.com/store/apps/details?id=host.exp.exponent) · [iOS (App Store)](https://apps.apple.com/app/expo-go/id982107779)
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+> ⚠️ **Este proyecto usa pnpm.** No uses `npm install` ni `yarn`: generan otro lockfile y mezclar gestores causa errores (módulos duplicados, descargas repetidas, etc.).
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 2. Instalación
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+# 1. Clona el repositorio
+git clone <url-del-repo>
 
-## Join the community
+# 2. Entra a la carpeta del frontend
+cd Frontend-kampus
 
-Join our community of developers creating universal apps.
+# 3. Instala las dependencias
+pnpm install
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+La primera instalación tarda unos minutos. Las siguientes son mucho más rápidas porque pnpm reutiliza los paquetes que ya descargó.
+
+---
+
+## 3. Ejecutar el proyecto
+
+```bash
+pnpm start
+```
+
+(equivalente a `pnpm expo start`)
+
+Esto levanta el servidor de desarrollo (Metro) y muestra en la terminal:
+
+- Un **código QR** para abrir la app en tu celular.
+- Atajos de teclado:
+  - `a` → abrir en emulador Android
+  - `i` → abrir en simulador iOS (solo macOS)
+  - `w` → abrir en el navegador
+  - `r` → recargar la app
+  - `j` → abrir el depurador
+  - `m` → abrir el menú de desarrollo en el dispositivo
+
+Deja esta terminal abierta mientras desarrollas. Al guardar cambios en el código, la app se actualiza sola (Fast Refresh).
+
+---
+
+## 4. Ver la app en tu celular
+
+### Opción A: misma red Wi‑Fi (recomendada)
+
+1. Conecta **tu computadora y tu celular a la misma red Wi‑Fi**.
+2. Ejecuta `pnpm start` en la computadora.
+3. Escanea el código QR:
+   - **Android:** abre **Expo Go** → *Scan QR code*.
+   - **iPhone:** abre la app de **Cámara** y apunta al QR; toca el aviso para abrir en Expo Go.
+4. Espera a que cargue el bundle (la primera vez tarda un poco más).
+
+#### En Windows: revisa la red y el firewall
+
+Si el celular se queda cargando o muestra *"Could not connect to development server"*:
+
+- La red Wi‑Fi debe estar configurada como **Privada**:
+  *Configuración → Red e Internet → Wi‑Fi → (tu red) → Tipo de perfil de red → Privada*.
+- Cuando Windows pregunte si **Node.js** puede comunicarse en la red, acepta para **redes privadas**.
+  Si ya lo rechazaste: *Panel de control → Firewall de Windows Defender → Permitir una aplicación… → Node.js → marcar "Privada"*.
+
+### Opción B: túnel (redes de escuela / redes distintas)
+
+Si no estás en la misma red, o la red bloquea conexiones entre dispositivos (común en Wi‑Fi de universidades), usa un túnel:
+
+```bash
+pnpm expo start --tunnel
+```
+
+La primera vez te pedirá instalar `@expo/ngrok`; acepta. Luego escanea el QR igual que en la opción A. Es más lento, pero funciona desde cualquier red.
+
+### Opción C: cable USB (solo Android)
+
+1. Activa **Opciones de desarrollador** y **Depuración USB** en tu Android.
+2. Conecta el celular por USB y acepta el aviso de depuración.
+3. Ejecuta `pnpm start` y presiona `a`.
+
+Requiere tener instalado [Android Platform Tools (adb)](https://developer.android.com/tools/releases/platform-tools).
+
+---
+
+## 5. Otras formas de verla
+
+- **Navegador:** `pnpm web` o presiona `w` en la terminal de Expo.
+- **Emulador Android:** instala [Android Studio](https://docs.expo.dev/workflow/android-studio-emulator/), crea un dispositivo virtual, ábrelo y presiona `a`.
+- **Simulador iOS:** solo en macOS con [Xcode](https://docs.expo.dev/workflow/ios-simulator/); presiona `i`.
+
+---
+
+## 6. Scripts disponibles
+
+| Comando | Qué hace |
+| --- | --- |
+| `pnpm start` | Inicia el servidor de desarrollo de Expo |
+| `pnpm android` | Inicia y abre en Android |
+| `pnpm ios` | Inicia y abre en iOS (macOS) |
+| `pnpm web` | Inicia y abre en el navegador |
+| `pnpm lint` | Revisa el código con ESLint |
+| `pnpm tsc --noEmit` | Revisa los tipos de TypeScript |
+
+### Agregar dependencias
+
+Usa siempre `expo install` en lugar de `pnpm add`, porque elige la versión compatible con el SDK de Expo:
+
+```bash
+pnpm expo install <paquete>
+```
+
+> Expo Go solo trae los módulos nativos de Expo. Si agregas una librería con código nativo propio, ya no abrirá en Expo Go y se necesitará un [development build](https://docs.expo.dev/develop/development-builds/introduction/).
+
+---
+
+## 7. Estructura del proyecto
+
+```
+Frontend-kampus/
+├── assets/               # Imágenes, íconos y fuentes
+├── scripts/              # Scripts auxiliares
+├── src/
+│   ├── app/              # Pantallas y rutas (Expo Router)
+│   │   ├── _layout.tsx   # Layout raíz
+│   │   ├── (tabs)/       # Pantallas con barra de pestañas
+│   │   └── auth/         # Login, registro y recuperar contraseña
+│   ├── components/       # Componentes reutilizables
+│   │   ├── auth/         # Componentes de las pantallas de autenticación
+│   │   └── ui/           # Botones, inputs, checkbox, etc.
+│   ├── constants/        # Tema, colores y constantes
+│   └── hooks/            # Hooks personalizados
+├── app.json              # Configuración de Expo
+├── package.json
+└── pnpm-lock.yaml
+```
+
+Cada archivo dentro de `src/app/` es una ruta. Por ejemplo, `src/app/auth/login/` corresponde a la pantalla `/auth/login`.
+
+---
+
+## 8. Solución de problemas
+
+**La app no refleja cambios o muestra errores raros**
+Limpia la caché de Metro:
+
+```bash
+pnpm expo start -c
+```
+
+**El celular no se conecta al servidor**
+- Verifica que ambos estén en la misma Wi‑Fi.
+- Revisa el firewall de Windows (ver [sección 4](#en-windows-revisa-la-red-y-el-firewall)).
+- Prueba con `pnpm expo start --tunnel`.
+
+**Expo Go dice que el proyecto es incompatible / versión de SDK distinta**
+Actualiza Expo Go desde la tienda. El proyecto usa **SDK 57**.
+
+**pnpm descarga todo de nuevo**
+Pasa si antes instalaste con `npm`. Borra `node_modules` y reinstala solo con pnpm:
+
+```bash
+Remove-Item -Recurse -Force node_modules   # PowerShell
+pnpm install
+```
+
+**Conectar con el backend desde el celular**
+En el celular, `localhost` / `127.0.0.1` apunta al propio celular, no a tu computadora. Para consumir la API de Laravel usa la **IP local de tu PC** (obtenla con `ipconfig`, ej. `http://192.168.1.50:8000`) y levanta el backend escuchando en la red:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+---
+
+## Recursos
+
+- [Documentación de Expo](https://docs.expo.dev/)
+- [Expo Router](https://docs.expo.dev/router/introduction/)
+- [Expo Go](https://expo.dev/go)
