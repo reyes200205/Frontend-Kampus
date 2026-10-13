@@ -1,67 +1,71 @@
-import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthScreen } from "@/components/auth/auth-screen";
-import { ThemedText } from "@/components/themed-text";
+import { CheckEmailCard } from "@/components/auth/check-email-card";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { isInstitutionalEmail } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
 
-export default function LoginScreen() {
-  const theme = useTheme();
+export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>();
+  const [emailSent, setEmailSent] = useState(false);
 
-  function handleLogin() {
-    if (!email.trim()) {
-      setError("Please enter your email and password");
+  function handleSend() {
+    if (!isInstitutionalEmail(email)) {
+      setError("Usa tu correo institucional de la UTT, la UAdeC o el Tec Laguna.");
       return;
     }
-    setError(null);
-    router.replace("/");
+    setError(undefined);
+    // TODO (T-06): pedir al backend el enlace para restablecer la contraseña
+    setEmailSent(true);
+  }
+
+  function handleResend() {
+    // TODO (T-06): reenviar el enlace desde el backend
   }
 
   return (
     <AuthScreen>
       <AuthHeader
-        title="Bienvenido De Vuelta!"
-        subtitle="Inicia sesión con tu correo institucional."
+        title="Recupera tu contraseña"
+        subtitle="Te enviaremos un enlace a tu correo institucional para crear una nueva."
       />
 
       <View style={styles.form}>
-        <TextField
-          label="Correo Institucional"
-          icon={{ ios: "envelope", android: "mail", web: "mail" }}
-          placeholder="Email address"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          textContentType="emailAddress"
-        />
-
-        {error && (
-          <ThemedText type="small" themeColor="danger" style={styles.error}>
-            {error}
-          </ThemedText>
+        {emailSent ? (
+          <CheckEmailCard
+            email={email.trim()}
+            onResend={handleResend}
+            message="Te enviamos un enlace para restablecer tu contraseña a"
+          />
+        ) : (
+          <>
+            <TextField
+              label="Correo institucional"
+              icon={{ ios: "envelope", android: "mail", web: "mail" }}
+              placeholder="matricula@utt.edu.mx"
+              value={email}
+              onChangeText={setEmail}
+              error={error}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
+            />
+            <Button title="Enviar enlace" onPress={handleSend} style={styles.button} />
+          </>
         )}
-
-        <Button
-          title="Enviar Correo"
-          onPress={handleLogin}
-          style={styles.button}
-        />
       </View>
 
       <AuthFooter
-        question="No tienes una cuenta?"
-        linkText="Registrate"
-        href="/auth/register"
+        question="¿Ya la recordaste?"
+        linkText="Inicia sesión"
+        href="/auth/login"
       />
     </AuthScreen>
   );
@@ -71,18 +75,6 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     gap: Spacing.three,
-  },
-  options: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  forgot: {
-    fontSize: 13,
-  },
-  error: {
-    fontSize: 13,
-    textAlign: "center",
   },
   button: {
     marginTop: Spacing.two,
