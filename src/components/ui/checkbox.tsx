@@ -1,17 +1,20 @@
+import { Link, type Href } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { Spacing } from "@/constants/theme";
+import { FontFamily, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type CheckboxProps = {
   label: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  /** Texto enlazado al final de la etiqueta, p. ej. "Acepto el" + "Aviso de privacidad". */
+  link?: { text: string; href: Href };
 };
 
-export function Checkbox({ label, value, onValueChange }: CheckboxProps) {
+export function Checkbox({ label, value, onValueChange, link }: CheckboxProps) {
   const theme = useTheme();
 
   return (
@@ -21,6 +24,7 @@ export function Checkbox({ label, value, onValueChange }: CheckboxProps) {
       hitSlop={Spacing.one}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: value }}
+      accessibilityLabel={link ? `${label} ${link.text}` : label}
     >
       <View
         style={[
@@ -40,6 +44,19 @@ export function Checkbox({ label, value, onValueChange }: CheckboxProps) {
       </View>
       <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
         {label}
+        {link && (
+          <>
+            {" "}
+            <Link
+              href={link.href}
+              // En web el clic subiría al Pressable y marcaría la casilla.
+              onPress={(event) => event.stopPropagation()}
+              style={[styles.link, { color: theme.accent }]}
+            >
+              {link.text}
+            </Link>
+          </>
+        )}
       </ThemedText>
     </Pressable>
   );
@@ -60,6 +77,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
+    flex: 1,
     fontSize: 13,
+  },
+  link: {
+    fontFamily: FontFamily.semibold,
+    textDecorationLine: "underline",
   },
 });

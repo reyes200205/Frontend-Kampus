@@ -129,12 +129,14 @@ export default function RegisterScreen() {
 
         <View style={styles.checks}>
           <Checkbox
-            label="Acepto los terminos privacidad"
+            label="Acepto el"
+            link={{ text: "Aviso de privacidad", href: "/legal/privacy" }}
             value={acceptedPrivacy}
             onValueChange={setAcceptedPrivacy}
           />
           <Checkbox
-            label="Acepto reglas comunidad"
+            label="Acepto las"
+            link={{ text: "Normas de comunidad", href: "/legal/guidelines" }}
             value={acceptedGuidelines}
             onValueChange={setAcceptedGuidelines}
           />
