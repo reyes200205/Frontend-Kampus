@@ -1,115 +1,141 @@
-import {
-  Tabs,
-  TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
-  TabListProps,
-} from 'expo-router/ui';
-import { SymbolView } from 'expo-symbols';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
+import { SymbolView, type AndroidSymbol } from 'expo-symbols';
+import { forwardRef } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ExternalLink } from './external-link';
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
-
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { KampusLogo } from '@/components/kampus-logo';
+import { TabItems } from '@/constants/navigation';
+import { FontFamily, MinTouchSize, Radius, SidebarWidth, Spacing } from '@/constants/theme';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useTheme } from '@/hooks/use-theme';
 
+/**
+ * Navegación principal en web: barra inferior en pantallas angostas y
+ * barra lateral izquierda en escritorio (anteproyecto 12.2).
+ */
 export default function AppTabs() {
+  const theme = useTheme();
+  const { isDesktop } = useBreakpoint();
+
   return (
-    <Tabs>
-      <TabSlot style={{ height: '100%' }} />
-      <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+    <Tabs style={[styles.root, isDesktop && styles.rootDesktop, { backgroundColor: theme.background }]}>
+      {/* La pantalla siempre va primero; en escritorio `row-reverse` deja la barra a la izquierda. */}
+      <TabSlot style={styles.slot} />
+      <TabList
+        style={[
+          isDesktop ? styles.sidebar : styles.bottomBar,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        {isDesktop && (
+          <View style={styles.sidebarLogo}>
+            <KampusLogo size={28} layout="inline" />
+          </View>
+        )}
+        {TabItems.map((item) => (
+          <TabTrigger key={item.name} name={item.name} href={item.href} asChild>
+            <TabButton icon={item.md} label={item.label} desktop={isDesktop} />
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
-          </TabTrigger>
-        </CustomTabList>
+        ))}
       </TabList>
     </Tabs>
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+type TabButtonProps = TabTriggerSlotProps & {
+  icon: AndroidSymbol;
+  label: string;
+  desktop: boolean;
+};
+
+const TabButton = forwardRef<View, TabButtonProps>(function TabButton(
+  { icon, label, desktop, isFocused, ...props },
+  ref
+) {
+  const theme = useTheme();
+  const color = isFocused ? theme.accent : theme.textSecondary;
+
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
-      </ThemedView>
+    <Pressable
+      ref={ref}
+      {...props}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: !!isFocused }}
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        desktop ? styles.sidebarItem : styles.bottomItem,
+        desktop && isFocused && { backgroundColor: theme.backgroundSelected },
+        pressed && styles.pressed,
+      ]}>
+      <SymbolView name={{ web: icon }} size={desktop ? 22 : 24} tintColor={color} />
+      <Text
+        style={[
+          desktop ? styles.sidebarLabel : styles.bottomLabel,
+          { color: isFocused ? theme.text : theme.textSecondary },
+          isFocused && styles.labelFocused,
+        ]}>
+        {label}
+      </Text>
     </Pressable>
   );
-}
-
-export function CustomTabList(props: TabListProps) {
-  const colors = useTheme();
-
-  return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Expo Starter
-        </ThemedText>
-
-        {props.children}
-
-        <ExternalLink href="https://docs.expo.dev" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">Docs</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink>
-      </ThemedView>
-    </View>
-  );
-}
+});
 
 const styles = StyleSheet.create({
-  tabListContainer: {
-    position: 'absolute',
-    width: '100%',
-    padding: Spacing.three,
+  root: {
+    flex: 1,
+  },
+  rootDesktop: {
+    flexDirection: 'row-reverse',
+  },
+  slot: {
+    flex: 1,
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    paddingVertical: Spacing.one,
+  },
+  bottomItem: {
+    flex: 1,
+    minHeight: MinTouchSize + 12,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
+    gap: Spacing.half,
   },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+  bottomLabel: {
+    fontSize: 11,
+    fontFamily: FontFamily.medium,
+  },
+  sidebar: {
+    width: SidebarWidth,
+    flexDirection: 'column',
+    // TabList trae `space-between` por defecto; en la barra lateral los ítems van juntos arriba.
+    justifyContent: 'flex-start',
+    borderRightWidth: 1,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.four,
+    gap: Spacing.one,
+  },
+  sidebarLogo: {
+    alignItems: 'flex-start',
+    paddingHorizontal: Spacing.two,
+    marginBottom: Spacing.four,
+  },
+  sidebarItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
+    gap: Spacing.three,
+    minHeight: MinTouchSize,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.medium,
   },
-  brandText: {
-    marginRight: 'auto',
+  sidebarLabel: {
+    fontSize: 15,
+    fontFamily: FontFamily.medium,
+  },
+  labelFocused: {
+    fontFamily: FontFamily.semibold,
   },
   pressed: {
     opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
   },
 });
