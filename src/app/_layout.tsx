@@ -5,12 +5,29 @@ import {
   Sora_700Bold,
   useFonts,
 } from '@expo-google-fonts/sora';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { ActiveTheme, ActiveThemeMode, Themes } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// Tema de la navegación (fondos de pantallas y modales) a partir del tema activo.
+const palette = Themes[ActiveTheme];
+const baseNavigationTheme = ActiveThemeMode === 'dark' ? DarkTheme : DefaultTheme;
+const navigationTheme: Theme = {
+  ...baseNavigationTheme,
+  colors: {
+    ...baseNavigationTheme.colors,
+    primary: palette.accent,
+    background: palette.background,
+    card: palette.background,
+    text: palette.text,
+    border: palette.border,
+  },
+};
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -24,7 +41,8 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ThemeProvider value={DarkTheme}>
+    <ThemeProvider value={navigationTheme}>
+      <StatusBar style={ActiveThemeMode === 'dark' ? 'light' : 'dark'} />
       <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />

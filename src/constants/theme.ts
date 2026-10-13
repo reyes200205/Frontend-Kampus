@@ -7,7 +7,8 @@ import "@/global.css";
 
 import { Platform } from "react-native";
 
-export const Colors = {
+/** Colores neutros de cada modo: fondos, textos, bordes y error. */
+const BaseColors = {
   light: {
     text: "#000000",
     background: "#ffffff",
@@ -16,9 +17,6 @@ export const Colors = {
     textSecondary: "#60646C",
     placeholder: "#8B8D98",
     border: "#E0E1E6",
-    accent: "#FF7A1A",
-    onAccent: "#ffffff",
-    glow: "rgba(255, 122, 26, 0.18)",
     danger: "#D93036",
   },
   dark: {
@@ -29,12 +27,58 @@ export const Colors = {
     textSecondary: "#9A9AA2",
     placeholder: "#5E5E66",
     border: "#26262B",
-    accent: "#cdca1cff",
-    onAccent: "#ffffff",
-    glow: "rgba(230, 208, 11, 0.92)",
     danger: "#FF5A5F",
   },
-} as const;
+};
+
+/**
+ * Color de marca de cada tema, por modo.
+ * - `accent`: botones primarios, enlaces, casillas marcadas.
+ * - `onAccent`: texto encima de `accent`.
+ * - `glow`: brillo del degradado superior de las pantallas de acceso.
+ */
+const Accents = {
+  yellow: {
+    light: { accent: "#D4A20B", onAccent: "#1A1A1E", glow: "rgba(245, 197, 24, 0.35)" },
+    dark: { accent: "#cdca1cff", onAccent: "#ffffff", glow: "rgba(230, 208, 11, 0.92)" },
+  },
+  blue: {
+    light: { accent: "#2563EB", onAccent: "#ffffff", glow: "rgba(37, 99, 235, 0.18)" },
+    dark: { accent: "#3B82F6", onAccent: "#ffffff", glow: "rgba(59, 130, 246, 0.6)" },
+  },
+  green: {
+    light: { accent: "#16A34A", onAccent: "#ffffff", glow: "rgba(22, 163, 74, 0.18)" },
+    dark: { accent: "#22C55E", onAccent: "#06120A", glow: "rgba(34, 197, 94, 0.6)" },
+  },
+};
+
+export type ThemeMode = keyof typeof BaseColors;
+export type ThemeAccent = keyof typeof Accents;
+export type ThemeName = `${ThemeMode}-${ThemeAccent}`;
+export type Palette = (typeof BaseColors)[ThemeMode] & (typeof Accents)[ThemeAccent][ThemeMode];
+
+function createTheme(mode: ThemeMode, accent: ThemeAccent): Palette {
+  return { ...BaseColors[mode], ...Accents[accent][mode] };
+}
+
+/** Los 6 temas disponibles: `light-*` y `dark-*` en azul, amarillo y verde. */
+export const Themes: Record<ThemeName, Palette> = {
+  "light-yellow": createTheme("light", "yellow"),
+  "light-blue": createTheme("light", "blue"),
+  "light-green": createTheme("light", "green"),
+  "dark-yellow": createTheme("dark", "yellow"),
+  "dark-blue": createTheme("dark", "blue"),
+  "dark-green": createTheme("dark", "green"),
+};
+
+/**
+ * Tema que usa toda la app. Cámbialo aquí para probar otro:
+ * "light-yellow" | "light-blue" | "light-green" | "dark-yellow" | "dark-blue" | "dark-green"
+ */
+export const ActiveTheme: ThemeName = "dark-yellow";
+
+/** Modo del tema activo, para la barra de estado y la navegación. */
+export const ActiveThemeMode: ThemeMode = ActiveTheme.startsWith("light") ? "light" : "dark";
 
 /** Familias de Sora cargadas en `src/app/_layout.tsx`. */
 export const FontFamily = {
@@ -44,7 +88,7 @@ export const FontFamily = {
   bold: "Sora_700Bold",
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof Palette;
 
 export const Fonts = Platform.select({
   ios: {
