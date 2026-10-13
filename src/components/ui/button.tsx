@@ -1,3 +1,4 @@
+import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,25 +9,54 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { FontFamily, Radius } from "@/constants/theme";
+import { FontFamily, FontSize, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+
+export type ButtonVariant = "primary" | "secondary" | "ghost";
 
 export type ButtonProps = Omit<PressableProps, "style"> & {
   title: string;
+  /**
+   * - `primary`: acción principal de la pantalla (relleno amarillo). Una por pantalla.
+   * - `secondary`: acción alternativa (borde, sin relleno).
+   * - `ghost`: acción de menor peso (solo texto).
+   */
+  variant?: ButtonVariant;
+  /** Ícono a la izquierda del texto. */
+  icon?: SymbolViewProps["name"];
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Button({ title, loading, disabled, style, ...rest }: ButtonProps) {
+export function Button({
+  title,
+  variant = "primary",
+  icon,
+  loading,
+  disabled,
+  style,
+  ...rest
+}: ButtonProps) {
   const theme = useTheme();
   const isDisabled = disabled || loading;
+
+  const variantStyle: ViewStyle = {
+    primary: { backgroundColor: theme.accent, shadowColor: theme.accent },
+    secondary: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.backgroundElement },
+    ghost: {},
+  }[variant];
+  const contentColor = variant === "primary" ? theme.onAccent : theme.text;
 
   return (
     <Pressable
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: theme.accent, shadowColor: theme.accent },
+        variant === "primary" && styles.primaryShadow,
+        variantStyle,
         pressed && styles.pressed,
         isDisabled && styles.disabled,
         style,
@@ -34,9 +64,12 @@ export function Button({ title, loading, disabled, style, ...rest }: ButtonProps
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={theme.onAccent} />
+        <ActivityIndicator color={contentColor} />
       ) : (
-        <Text style={[styles.title, { color: theme.onAccent }]}>{title}</Text>
+        <>
+          {icon && <SymbolView name={icon} size={18} tintColor={contentColor} />}
+          <Text style={[styles.title, { color: contentColor }]}>{title}</Text>
+        </>
       )}
     </Pressable>
   );
@@ -44,12 +77,17 @@ export function Button({ title, loading, disabled, style, ...rest }: ButtonProps
 
 const styles = StyleSheet.create({
   button: {
-    height: 52,
+    minHeight: MinTouchSize + 8,
+    paddingHorizontal: Spacing.four,
     borderRadius: Radius.full,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: Spacing.two,
+  },
+  primaryShadow: {
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 6,
   },
@@ -61,7 +99,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   title: {
-    fontSize: 16,
+    fontSize: FontSize.body,
     fontFamily: FontFamily.semibold,
   },
 });
