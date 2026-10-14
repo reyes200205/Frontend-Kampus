@@ -2,57 +2,55 @@ import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { Radius, Spacing } from "@/constants/theme";
+import { Card } from "@/components/ui/card";
+import { MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type CheckEmailCardProps = {
   email: string;
   onResend: () => void;
+  /** Texto antes del correo; cambia entre verificación y recuperación de contraseña. */
+  message?: string;
 };
 
-export function CheckEmailCard({ email, onResend }: CheckEmailCardProps) {
+export function CheckEmailCard({
+  email,
+  onResend,
+  message = "Te enviamos un enlace de verificación a",
+}: CheckEmailCardProps) {
   const theme = useTheme();
 
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-      ]}
-    >
+    <Card style={styles.card}>
       <View style={[styles.iconCircle, { backgroundColor: theme.glow }]}>
         <SymbolView
           name={{ ios: "envelope", android: "mail", web: "mail" }}
           size={28}
-          tintColor={theme.border}
+          tintColor={theme.accent}
         />
       </View>
 
       <View style={styles.texts}>
-        <ThemedText type="subtitle" style={styles.title}>
-          Revisa tu correo
-        </ThemedText>
-        <ThemedText
-          type="small"
-          themeColor="textSecondary"
-          style={styles.center}
-        >
-          Nostros enviamos un correo a{" "}
+        <ThemedText type="heading">Revisa tu correo</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+          {message}{" "}
           <ThemedText type="smallBold">{email}</ThemedText>
         </ThemedText>
       </View>
 
       <View style={styles.resend}>
         <ThemedText type="small" themeColor="textSecondary">
-          No recibiste el correo?
+          ¿No te llegó el correo?
         </ThemedText>
-        <Pressable onPress={onResend} hitSlop={Spacing.two}>
-          <ThemedText type="smallBold" style={{ color: theme.accent }}>
-            Renviar Correo
-          </ThemedText>
+        <Pressable
+          onPress={onResend}
+          hitSlop={(MinTouchSize - 20) / 2}
+          accessibilityRole="button"
+        >
+          <ThemedText type="link">Reenviar correo</ThemedText>
         </Pressable>
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -61,8 +59,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.three,
     padding: Spacing.four,
-    borderRadius: Radius.large,
-    borderWidth: 1,
   },
   iconCircle: {
     width: 64,
@@ -75,15 +71,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.one,
   },
-  title: {
-    fontSize: 20,
-    lineHeight: 28,
-  },
   center: {
     textAlign: "center",
   },
   resend: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     alignItems: "center",
     gap: Spacing.one,
   },

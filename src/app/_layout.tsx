@@ -8,8 +8,8 @@ import {
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ActiveTheme, ActiveThemeMode, Themes } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -38,12 +38,15 @@ export default function RootLayout() {
   });
 
   // El splash sigue visible hasta que las fuentes estén listas
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
   if (!fontsLoaded) return null;
 
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style={ActiveThemeMode === 'dark' ? 'light' : 'dark'} />
-      <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth/login/index" />

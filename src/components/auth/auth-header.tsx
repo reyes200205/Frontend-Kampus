@@ -15,14 +15,10 @@ export function AuthHeader({ title, subtitle, withLogo = true }: AuthHeaderProps
     <View style={styles.container}>
       {withLogo && <KampusLogo />}
       <View style={styles.texts}>
-        <ThemedText type="subtitle" style={styles.title}>
+        <ThemedText type="subtitle" accessibilityRole="header" style={styles.center}>
           {title}
         </ThemedText>
-        <ThemedText
-          type="small"
-          themeColor="textSecondary"
-          style={styles.subtitle}
-        >
+        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
           {subtitle}
         </ThemedText>
       </View>
@@ -38,15 +34,9 @@ const styles = StyleSheet.create({
   texts: {
     alignItems: "center",
     gap: Spacing.two,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.two,
   },
-  title: {
-    fontSize: 24,
-    lineHeight: 32,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 13,
+  center: {
     textAlign: "center",
   },
 });
