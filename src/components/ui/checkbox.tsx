@@ -3,7 +3,7 @@ import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { FontFamily, Spacing } from "@/constants/theme";
+import { FontFamily, MinTouchSize, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type CheckboxProps = {
@@ -21,7 +21,6 @@ export function Checkbox({ label, value, onValueChange, link }: CheckboxProps) {
     <Pressable
       style={styles.row}
       onPress={() => onValueChange(!value)}
-      hitSlop={Spacing.one}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: value }}
       accessibilityLabel={link ? `${label} ${link.text}` : label}
@@ -51,7 +50,7 @@ export function Checkbox({ label, value, onValueChange, link }: CheckboxProps) {
               href={link.href}
               // En web el clic subiría al Pressable y marcaría la casilla.
               onPress={(event) => event.stopPropagation()}
-              style={[styles.link, { color: theme.accent }]}
+              style={[styles.link, { color: theme.accentText }]}
             >
               {link.text}
             </Link>
@@ -63,22 +62,23 @@ export function Checkbox({ label, value, onValueChange, link }: CheckboxProps) {
 }
 
 const styles = StyleSheet.create({
+  // La fila completa es tocable y mide al menos 44 px de alto (RNF-10).
   row: {
+    minHeight: MinTouchSize,
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
+    gap: Spacing.two + 2,
   },
   box: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 6,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
   label: {
     flex: 1,
-    fontSize: 13,
   },
   link: {
     fontFamily: FontFamily.semibold,

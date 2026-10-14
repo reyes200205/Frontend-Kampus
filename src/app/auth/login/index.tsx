@@ -1,6 +1,6 @@
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthHeader } from "@/components/auth/auth-header";
@@ -10,10 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { Spacing } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { signIn } from "@/hooks/use-session";
 
 export default function LoginScreen() {
-  const theme = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -21,24 +20,25 @@ export default function LoginScreen() {
 
   function handleLogin() {
     if (!email.trim() || !password) {
-      setError("Por favor ingresa tu correo y contraseña");
+      setError("Ingresa tu correo y tu contraseña.");
       return;
     }
     setError(null);
-    // TODO: validar credenciales contra el backend
+    // TODO (T-06): validar credenciales contra el backend
+    signIn();
     router.replace("/");
   }
 
   return (
     <AuthScreen>
       <AuthHeader
-        title="Bienvenido De Vuelta!"
+        title="¡Bienvenido de vuelta!"
         subtitle="Inicia sesión con tu correo institucional."
       />
 
       <View style={styles.form}>
         <TextField
-          label="Correo Institucional"
+          label="Correo institucional"
           icon={{ ios: "envelope", android: "mail", web: "mail" }}
           placeholder="matricula@utt.edu.mx"
           value={email}
@@ -51,7 +51,7 @@ export default function LoginScreen() {
         <TextField
           label="Contraseña"
           icon={{ ios: "lock", android: "lock", web: "lock" }}
-          placeholder="********"
+          placeholder="••••••••"
           value={password}
           onChangeText={setPassword}
           password
@@ -60,20 +60,10 @@ export default function LoginScreen() {
         />
 
         <View style={styles.options}>
-          <Checkbox
-            label="Recordar"
-            value={remember}
-            onValueChange={setRemember}
-          />
-          {/* TODO: pantalla de recuperar contraseña */}
-          <Pressable hitSlop={Spacing.two}>
-            <ThemedText
-              type="link"
-              style={[styles.forgot, { color: theme.text }]}
-            >
-              Olvidaste tu contraseña?
-            </ThemedText>
-          </Pressable>
+          <Checkbox label="Recordarme" value={remember} onValueChange={setRemember} />
+          <Link href="/auth/forgot-password">
+            <ThemedText type="link">¿Olvidaste tu contraseña?</ThemedText>
+          </Link>
         </View>
 
         {error && (
@@ -82,16 +72,12 @@ export default function LoginScreen() {
           </ThemedText>
         )}
 
-        <Button
-          title="Inciar Sesión"
-          onPress={handleLogin}
-          style={styles.button}
-        />
+        <Button title="Iniciar sesión" onPress={handleLogin} style={styles.button} />
       </View>
 
       <AuthFooter
-        question="No tienes una cuenta?"
-        linkText="Registrate"
+        question="¿No tienes una cuenta?"
+        linkText="Regístrate"
         href="/auth/register"
       />
     </AuthScreen>
@@ -105,14 +91,12 @@ const styles = StyleSheet.create({
   },
   options: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  forgot: {
-    fontSize: 13,
+    columnGap: Spacing.three,
   },
   error: {
-    fontSize: 13,
     textAlign: "center",
   },
   button: {

@@ -1,12 +1,12 @@
 import { Redirect } from 'expo-router';
 
 import AppTabs from '@/components/app-tabs';
-
-// TODO: reemplazar por la sesión real cuando conectemos el backend
-const isAuthenticated = false;
+import { useSession } from '@/hooks/use-session';
 
 export default function TabsLayout() {
-  if (!isAuthenticated) return <Redirect href="/auth/login" />;
+  const { isSignedIn } = useSession();
+
+  if (!isSignedIn) return <Redirect href="/auth/login" />;
 
   return <AppTabs />;
 }

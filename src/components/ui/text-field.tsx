@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { FontFamily, Radius, Spacing } from "@/constants/theme";
+import { FontFamily, FontSize, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type TextFieldProps = TextInputProps & {
@@ -35,7 +35,9 @@ export function TextField({
 
   return (
     <View style={styles.container}>
-      <ThemedText style={styles.label}>{label}</ThemedText>
+      <ThemedText type="small" style={styles.label}>
+        {label}
+      </ThemedText>
       <View
         style={[
           styles.field,
@@ -56,6 +58,8 @@ export function TextField({
           placeholderTextColor={theme.placeholder}
           selectionColor={theme.accent}
           cursorColor={theme.accent}
+          accessibilityLabel={label}
+          accessibilityHint={error ?? hint}
           secureTextEntry={password && hidden}
           onFocus={(e) => {
             setFocused(true);
@@ -69,7 +73,12 @@ export function TextField({
           {...rest}
         />
         {password && (
-          <Pressable onPress={() => setHidden(!hidden)} hitSlop={Spacing.two}>
+          <Pressable
+            onPress={() => setHidden(!hidden)}
+            hitSlop={(MinTouchSize - 18) / 2}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? "Mostrar contraseña" : "Ocultar contraseña"}
+          >
             <SymbolView
               size={18}
               tintColor={theme.placeholder}
@@ -83,11 +92,7 @@ export function TextField({
         )}
       </View>
       {(error || hint) && (
-        <ThemedText
-          type="small"
-          themeColor={error ? "danger" : "textSecondary"}
-          style={styles.helper}
-        >
+        <ThemedText type="caption" themeColor={error ? "danger" : "textSecondary"}>
           {error ?? hint}
         </ThemedText>
       )}
@@ -100,11 +105,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   label: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontFamily: FontFamily.medium,
   },
   field: {
-    height: 50,
+    height: MinTouchSize + 6,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
@@ -112,14 +116,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 10,
   },
-  helper: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
   input: {
     flex: 1,
     height: "100%",
-    fontSize: 14,
+    fontSize: FontSize.small,
     fontFamily: FontFamily.regular,
   },
 });

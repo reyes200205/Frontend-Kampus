@@ -29,13 +29,13 @@ export default function RegisterScreen() {
   function validate() {
     const next: FormErrors = {};
     if (!firstName.trim()) next.firstName = "Ingresa tu nombre";
-    if (!lastName.trim()) next.lastName = "ingresa tu apellido";
+    if (!lastName.trim()) next.lastName = "Ingresa tu apellido";
     if (!isInstitutionalEmail(email))
-      next.email = "Usa un correo de  UTT, UAdeC or Tec. Laguna";
+      next.email = "Usa tu correo institucional de la UTT, la UAdeC o el Tec Laguna.";
     if (password.length < MinPasswordLength)
-      next.password = `Usa minimo ${MinPasswordLength} Caracteres`;
+      next.password = `Usa mínimo ${MinPasswordLength} caracteres`;
     if (!acceptedPrivacy || !acceptedGuidelines)
-      next.terms = "Por favor acepta los terminos y condiciones de uso";
+      next.terms = "Acepta el aviso de privacidad y las normas de comunidad para continuar.";
     return next;
   }
 
@@ -56,13 +56,13 @@ export default function RegisterScreen() {
       <AuthScreen>
         <AuthHeader
           title="Verificar cuenta"
-          subtitle="Por favor verifica tu correo electronico para activar tu cuenta"
+          subtitle="Verifica tu correo electrónico para activar tu cuenta."
         />
         <View style={styles.form}>
           <CheckEmailCard email={email.trim()} onResend={handleResend} />
         </View>
         <AuthFooter
-          question="Tu cuenta ya esta verificada?"
+          question="¿Ya verificaste tu cuenta?"
           linkText="Iniciar sesión"
           href="/auth/login"
         />
@@ -75,7 +75,7 @@ export default function RegisterScreen() {
       <AuthHeader
         withLogo={false}
         title="Crea tu cuenta"
-        subtitle="Unete con tu correo institucional"
+        subtitle="Únete con tu correo institucional."
       />
 
       <View style={styles.form}>
@@ -87,8 +87,8 @@ export default function RegisterScreen() {
           onChangeText={setFirstName}
           error={errors.firstName}
           autoCapitalize="words"
-          autoComplete="name"
-          textContentType="name"
+          autoComplete="given-name"
+          textContentType="givenName"
         />
         <TextField
           label="Apellido"
@@ -98,17 +98,17 @@ export default function RegisterScreen() {
           onChangeText={setLastName}
           error={errors.lastName}
           autoCapitalize="words"
-          autoComplete="name"
-          textContentType="name"
+          autoComplete="family-name"
+          textContentType="familyName"
         />
 
         <TextField
-          label="Correo Institucional"
+          label="Correo institucional"
           icon={{ ios: "envelope", android: "mail", web: "mail" }}
           placeholder="matricula@utt.edu.mx"
           value={email}
           onChangeText={setEmail}
-          hint="UTT, UAdeC y Tec. Laguna"
+          hint="Dominios aceptados: UTT, UAdeC y Tec Laguna."
           error={errors.email}
           keyboardType="email-address"
           autoCapitalize="none"
@@ -118,7 +118,7 @@ export default function RegisterScreen() {
         <TextField
           label="Contraseña"
           icon={{ ios: "lock", android: "lock", web: "lock" }}
-          placeholder="Enter password"
+          placeholder={`Mínimo ${MinPasswordLength} caracteres`}
           value={password}
           onChangeText={setPassword}
           error={errors.password}
@@ -141,7 +141,7 @@ export default function RegisterScreen() {
             onValueChange={setAcceptedGuidelines}
           />
           {errors.terms && (
-            <ThemedText type="small" themeColor="danger" style={styles.error}>
+            <ThemedText type="caption" themeColor="danger">
               {errors.terms}
             </ThemedText>
           )}
@@ -155,8 +155,8 @@ export default function RegisterScreen() {
       </View>
 
       <AuthFooter
-        question="Ya tienes una cuenta?"
-        linkText="Incia sesión"
+        question="¿Ya tienes una cuenta?"
+        linkText="Inicia sesión"
         href="/auth/login"
       />
     </AuthScreen>
@@ -169,12 +169,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   checks: {
-    gap: 12,
-    marginTop: Spacing.one,
-  },
-  error: {
-    fontSize: 12,
-    lineHeight: 16,
+    gap: Spacing.one,
   },
   button: {
     marginTop: Spacing.two,

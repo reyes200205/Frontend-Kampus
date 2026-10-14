@@ -41,10 +41,10 @@ export function LegalDocumentView({ document }: { document: LegalDocument }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.inner}>
-          <ThemedText type="subtitle" style={styles.title}>
+          <ThemedText type="subtitle" accessibilityRole="header">
             {document.title}
           </ThemedText>
-          <ThemedText type="small" themeColor="placeholder">
+          <ThemedText type="caption" themeColor="textSecondary">
             Última actualización: {document.updatedAt}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.paragraph}>
@@ -120,16 +120,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: Spacing.two,
   },
-  title: {
-    fontSize: 24,
-    lineHeight: 32,
-  },
   section: {
     gap: Spacing.two,
     marginTop: Spacing.three,
   },
   sectionTitle: {
     fontSize: 15,
+    lineHeight: 22,
   },
   paragraph: {
     lineHeight: 22,

@@ -1,42 +1,48 @@
 import { Platform, StyleSheet, Text, type TextProps } from "react-native";
 
-import { FontFamily, Fonts, ThemeColor } from "@/constants/theme";
+import { FontFamily, Fonts, FontSize, ThemeColor } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type ThemedTextProps = TextProps & {
+  /**
+   * Variante de la escala tipográfica:
+   * `title` (H1 32) · `subtitle` (H2 25) · `heading` (H3 20) · `default` (cuerpo 16) ·
+   * `small` (14) · `smallBold` (14) · `caption` (12) · `link` (14, color de marca) · `code`.
+   */
   type?:
     | "default"
     | "title"
+    | "subtitle"
+    | "heading"
     | "small"
     | "smallBold"
-    | "subtitle"
+    | "caption"
     | "link"
-    | "linkPrimary"
     | "code";
   themeColor?: ThemeColor;
-  link?: string;
 };
 
 export function ThemedText({
   style,
-  link,
   type = "default",
   themeColor,
   ...rest
 }: ThemedTextProps) {
   const theme = useTheme();
+  const color = theme[themeColor ?? (type === "link" ? "accentText" : "text")];
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? "text"] },
+        { color },
         type === "default" && styles.default,
         type === "title" && styles.title,
+        type === "subtitle" && styles.subtitle,
+        type === "heading" && styles.heading,
         type === "small" && styles.small,
         type === "smallBold" && styles.smallBold,
-        type === "subtitle" && styles.subtitle,
+        type === "caption" && styles.caption,
         type === "link" && styles.link,
-        type === "linkPrimary" && styles.linkPrimary,
         type === "code" && styles.code,
         style,
       ]}
@@ -46,44 +52,49 @@ export function ThemedText({
 }
 
 const styles = StyleSheet.create({
+  title: {
+    fontSize: FontSize.h1,
+    lineHeight: 40,
+    fontFamily: FontFamily.bold,
+  },
+  subtitle: {
+    fontSize: FontSize.h2,
+    lineHeight: 32,
+    fontFamily: FontFamily.semibold,
+  },
+  heading: {
+    fontSize: FontSize.h3,
+    lineHeight: 28,
+    fontFamily: FontFamily.semibold,
+  },
+  default: {
+    fontSize: FontSize.body,
+    lineHeight: 24,
+    fontFamily: FontFamily.regular,
+  },
   small: {
-    fontSize: 14,
+    fontSize: FontSize.small,
     lineHeight: 20,
     fontFamily: FontFamily.regular,
   },
   smallBold: {
-    fontSize: 14,
+    fontSize: FontSize.small,
     lineHeight: 20,
-    fontFamily: FontFamily.bold,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: FontFamily.medium,
-  },
-  title: {
-    fontSize: 48,
-    fontFamily: FontFamily.semibold,
-    lineHeight: 52,
-  },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
     fontFamily: FontFamily.semibold,
   },
-  link: {
-    lineHeight: 30,
-    fontSize: 14,
+  caption: {
+    fontSize: FontSize.caption,
+    lineHeight: 16,
     fontFamily: FontFamily.regular,
   },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: "#3c87f7",
+  link: {
+    fontSize: FontSize.small,
+    lineHeight: 20,
+    fontFamily: FontFamily.semibold,
   },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
+    fontSize: FontSize.caption,
   },
 });
