@@ -1,7 +1,7 @@
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
 import { SymbolView, type AndroidSymbol } from 'expo-symbols';
 import { forwardRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type PressableInstance } from 'react-native';
 
 import { KampusLogo } from '@/components/kampus-logo';
 import { TabItems } from '@/constants/navigation';
@@ -47,7 +47,7 @@ type TabButtonProps = TabTriggerSlotProps & {
   desktop: boolean;
 };
 
-const TabButton = forwardRef<View, TabButtonProps>(function TabButton(
+const TabButton = forwardRef<PressableInstance, TabButtonProps>(function TabButton(
   { icon, label, desktop, isFocused, ...props },
   ref
 ) {
