@@ -5,7 +5,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError } from "@/services/api";
-import { getDiscovery, swipe, type DiscoveryCard, type Match } from "@/services/discovery";
+import { getDiscovery, swipe } from "@/services/discovery";
+import type { DiscoveryCard, Match } from "@/types/discovery";
 
 const BatchSize = 10;
 /** Con menos tarjetas que esto en el mazo se pide la siguiente tanda, para que no se note la espera. */
@@ -35,7 +36,7 @@ export function useDiscovery() {
     const current = generation.current;
 
     try {
-      const { data } = await getDiscovery(BatchSize);
+      const data = await getDiscovery(BatchSize);
       if (current !== generation.current) return;
 
       const fresh = data.filter((card) => !known.current.has(card.id) && !evaluated.current.has(card.id));
@@ -81,7 +82,7 @@ export function useDiscovery() {
     setCards((previous) => previous.filter((item) => item.id !== card.id));
 
     try {
-      const { data } = await swipe(card.id, liked);
+      const data = await swipe(card.id, liked);
       if (data.match) setMatch(data.match);
     } catch (e) {
       // 409: ya se había evaluado (otra pestaña o un doble toque). No hay nada que deshacer.

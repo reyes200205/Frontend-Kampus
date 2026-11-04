@@ -7,7 +7,9 @@ import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Spacing } from "@/constants/theme";
 import { Universities } from "@/constants/universities";
-import { EmptyFilters, type DiscoveryFilters, type Interest } from "@/services/discovery";
+import { EmptyFilters } from "@/services/discovery";
+import type { DiscoveryFilters } from "@/types/discovery";
+import type { Interest } from "@/types/profile";
 
 /** Máximo de intereses que acepta la API en el filtro. */
 const MaxInterests = 20;

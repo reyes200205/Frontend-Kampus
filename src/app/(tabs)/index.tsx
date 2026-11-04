@@ -24,14 +24,10 @@ import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useDiscovery } from "@/hooks/use-discovery";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
-import {
-  EmptyFilters,
-  getDiscoveryFilters,
-  getInterests,
-  saveDiscoveryFilters,
-  type DiscoveryFilters,
-  type Interest,
-} from "@/services/discovery";
+import { EmptyFilters, getDiscoveryFilters, saveDiscoveryFilters } from "@/services/discovery";
+import { getInterests } from "@/services/profile";
+import type { DiscoveryFilters } from "@/types/discovery";
+import type { Interest } from "@/types/profile";
 
 type DiscoverMode = "for-you" | "nearby";
 
@@ -58,10 +54,10 @@ export default function DiscoverScreen() {
   // Los filtros viven en el perfil (RF-06), así que se recuperan al abrir la app.
   useEffect(() => {
     getDiscoveryFilters()
-      .then(({ data }) => setFilters(data))
+      .then(setFilters)
       .catch(() => {});
     getInterests()
-      .then(({ data }) => setInterests(data))
+      .then(setInterests)
       .catch(() => {});
   }, []);
 
@@ -69,8 +65,7 @@ export default function DiscoverScreen() {
     setSavingFilters(true);
     setFiltersError(null);
     try {
-      const { data } = await saveDiscoveryFilters(next);
-      setFilters(data);
+      setFilters(await saveDiscoveryFilters(next));
       setFiltersOpen(false);
       discovery.reload();
     } catch (e) {
