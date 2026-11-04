@@ -41,6 +41,7 @@ export function TextField({
       <View
         style={[
           styles.field,
+          rest.multiline && styles.fieldMultiline,
           {
             backgroundColor: theme.backgroundElement,
             borderColor: error ? theme.danger : focused ? theme.accent : theme.border,
@@ -69,7 +70,12 @@ export function TextField({
             setFocused(false);
             onBlur?.(e);
           }}
-          style={[styles.input, { color: theme.text }, style]}
+          style={[
+            styles.input,
+            rest.multiline && styles.inputMultiline,
+            { color: theme.text },
+            style,
+          ]}
           {...rest}
         />
         {password && (
@@ -116,10 +122,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 10,
   },
+  fieldMultiline: {
+    height: undefined,
+    minHeight: 112,
+    alignItems: "flex-start",
+    paddingVertical: Spacing.two,
+  },
   input: {
     flex: 1,
     height: "100%",
     fontSize: FontSize.small,
     fontFamily: FontFamily.regular,
+    // En web el navegador dibuja su propio contorno al enfocar; el borde del campo ya marca el foco.
+    outlineWidth: 0,
+  },
+  inputMultiline: {
+    height: undefined,
+    minHeight: 96,
+    alignSelf: "stretch",
+    textAlignVertical: "top",
   },
 });

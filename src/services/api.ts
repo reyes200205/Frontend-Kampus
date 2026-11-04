@@ -1,5 +1,6 @@
 /**
- * Cliente mínimo de la API de Laravel (backend-kampus).
+ * Cliente HTTP de la API de Laravel (backend-kampus): token, JSON o FormData y errores.
+ * Las llamadas de cada funcionalidad viven en su propio servicio (`auth.ts`, `profile.ts`, …).
  * La URL base sale de `EXPO_PUBLIC_API_URL` (ver `.env.example`).
  */
 
@@ -28,6 +29,8 @@ export async function apiRequest<T>(
   options: { method?: string; body?: unknown } = {},
 ): Promise<T> {
   const token = getToken();
+  // Con FormData (subir fotos) el navegador o React Native ponen el Content-Type con su boundary.
+  const isForm = options.body instanceof FormData;
   let response: Response;
 
   try {
@@ -35,10 +38,15 @@ export async function apiRequest<T>(
       method: options.method ?? "GET",
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(isForm ? {} : { "Content-Type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body:
+        options.body === undefined
+          ? undefined
+          : isForm
+            ? (options.body as FormData)
+            : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError("No se pudo conectar con el servidor. Revisa tu conexión.", 0);
@@ -55,33 +63,4 @@ export async function apiRequest<T>(
   }
 
   return data as T;
-}
-
-export type User = {
-  id: number;
-  name: string;
-  email: string;
-  email_verified_at: string | null;
-  role: "student" | "moderator" | "admin";
-  university_id: number | null;
-};
-
-export function register(body: {
-  name: string;
-  email: string;
-  password: string;
-  password_confirmation: string;
-}) {
-  return apiRequest<{ message: string; user: User }>("/register", { method: "POST", body });
-}
-
-export function login(body: { email: string; password: string; device_name?: string }) {
-  return apiRequest<{ token: string; token_type: string; expires_at: string; user: User }>(
-    "/login",
-    { method: "POST", body },
-  );
-}
-
-export function logout() {
-  return apiRequest<null>("/logout", { method: "POST" });
 }

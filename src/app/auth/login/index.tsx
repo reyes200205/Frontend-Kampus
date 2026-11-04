@@ -11,7 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { Spacing } from "@/constants/theme";
 import { signIn } from "@/hooks/use-session";
-import { ApiError, login } from "@/services/api";
+import { ApiError } from "@/services/api";
+import { login } from "@/services/auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
