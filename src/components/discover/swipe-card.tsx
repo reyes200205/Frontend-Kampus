@@ -18,7 +18,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Chip } from "@/components/ui/chip";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import type { DiscoveryCard } from "@/services/discovery";
+import type { DiscoveryCard } from "@/types/discovery";
 
 /** Intereses que caben en la tarjeta; el resto se resume en "+N". */
 const VisibleInterests = 4;

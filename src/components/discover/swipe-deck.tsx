@@ -5,7 +5,7 @@ import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { SwipeCard, type SwipeCardHandle } from "@/components/discover/swipe-card";
 import { useTheme } from "@/hooks/use-theme";
 import { Radius, Spacing } from "@/constants/theme";
-import type { DiscoveryCard } from "@/services/discovery";
+import type { DiscoveryCard } from "@/types/discovery";
 
 export type SwipeDeckProps = {
   cards: DiscoveryCard[];
