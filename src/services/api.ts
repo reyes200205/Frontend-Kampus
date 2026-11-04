@@ -85,3 +85,11 @@ export function login(body: { email: string; password: string; device_name?: str
 export function logout() {
   return apiRequest<null>("/logout", { method: "POST" });
 }
+
+/** Confirma el correo con los parámetros del enlace que manda el backend (RF-01). */
+export function verifyEmail(params: { id: string; hash: string; expires: string; signature: string }) {
+  const query = new URLSearchParams({ expires: params.expires, signature: params.signature });
+  return apiRequest<{ message: string }>(
+    `/email/verify/${encodeURIComponent(params.id)}/${encodeURIComponent(params.hash)}?${query}`,
+  );
+}
