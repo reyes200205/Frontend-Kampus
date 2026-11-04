@@ -51,6 +51,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth/login/index" />
         <Stack.Screen name="auth/verify-email/index" />
+        <Stack.Screen name="profile/edit" />
         <Stack.Screen name="legal/privacy" options={{ presentation: 'modal' }} />
         <Stack.Screen name="legal/guidelines" options={{ presentation: 'modal' }} />
       </Stack>

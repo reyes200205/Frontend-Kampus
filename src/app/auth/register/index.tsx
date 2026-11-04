@@ -11,7 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { isInstitutionalEmail, MinPasswordLength } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
-import { ApiError, register } from "@/services/api";
+import { ApiError } from "@/services/api";
+import { register } from "@/services/auth";
 
 type FormErrors = Partial<
   Record<"firstName" | "lastName" | "email" | "password" | "terms" | "form", string>

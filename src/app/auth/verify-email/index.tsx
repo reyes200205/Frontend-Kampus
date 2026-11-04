@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { ApiError, verifyEmail } from "@/services/api";
+import { ApiError } from "@/services/api";
+import { verifyEmail } from "@/services/auth";
 
 type Status = "loading" | "success" | "error";
 

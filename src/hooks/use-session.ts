@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-import type { User } from '@/services/api';
+import type { User } from '@/types/auth';
 
 type Session = { token: string; user: User } | null;
 
