@@ -9,12 +9,15 @@ import { Card } from "@/components/ui/card";
 import { MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { signOut } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
+import { logout } from "@/services/api";
 
 // TODO (T-08): datos reales del perfil, fotos, intereses y edición.
 export default function ProfileScreen() {
   const theme = useTheme();
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    // Revoca el token en el backend; si falla (sin red, token vencido) igual se cierra la sesión local.
+    await logout().catch(() => undefined);
     signOut();
     router.replace("/auth/login");
   }

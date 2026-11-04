@@ -11,9 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { isInstitutionalEmail, MinPasswordLength } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
+import { ApiError, register } from "@/services/api";
 
 type FormErrors = Partial<
-  Record<"firstName" | "lastName" | "email" | "password" | "terms", string>
+  Record<"firstName" | "lastName" | "email" | "password" | "terms" | "form", string>
 >;
 
 export default function RegisterScreen() {
@@ -25,6 +26,7 @@ export default function RegisterScreen() {
   const [acceptedGuidelines, setAcceptedGuidelines] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [emailSent, setEmailSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function validate() {
     const next: FormErrors = {};
@@ -39,12 +41,33 @@ export default function RegisterScreen() {
     return next;
   }
 
-  function handleRegister() {
+  async function handleRegister() {
     const next = validate();
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    // TODO: crear la cuenta en el backend y enviar el correo de verificación
-    setEmailSent(true);
+
+    setLoading(true);
+    try {
+      // El backend manda el correo de verificación al crear la cuenta.
+      await register({
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email,
+        password,
+        // El formulario no pide confirmar la contraseña; Laravel exige el campo por la regla `confirmed`.
+        password_confirmation: password,
+      });
+      setEmailSent(true);
+    } catch (e) {
+      if (!(e instanceof ApiError)) {
+        setErrors({ form: "Ocurrió un error inesperado." });
+      } else if (e.status === 422) {
+        setErrors({ firstName: e.field("name"), email: e.field("email"), password: e.field("password") });
+      } else {
+        setErrors({ form: e.message });
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleResend() {
@@ -147,9 +170,16 @@ export default function RegisterScreen() {
           )}
         </View>
 
+        {errors.form && (
+          <ThemedText type="small" themeColor="danger" style={styles.formError}>
+            {errors.form}
+          </ThemedText>
+        )}
+
         <Button
           title="Registrarse"
           onPress={handleRegister}
+          loading={loading}
           style={styles.button}
         />
       </View>
@@ -170,6 +200,9 @@ const styles = StyleSheet.create({
   },
   checks: {
     gap: Spacing.one,
+  },
+  formError: {
+    textAlign: "center",
   },
   button: {
     marginTop: Spacing.two,

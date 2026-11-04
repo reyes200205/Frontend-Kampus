@@ -1,6 +1,6 @@
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthHeader } from "@/components/auth/auth-header";
@@ -11,22 +11,33 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { Spacing } from "@/constants/theme";
 import { signIn } from "@/hooks/use-session";
+import { ApiError, login } from "@/services/api";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin() {
+  async function handleLogin() {
     if (!email.trim() || !password) {
       setError("Ingresa tu correo y tu contraseña.");
       return;
     }
     setError(null);
-    // TODO (T-06): validar credenciales contra el backend
-    signIn();
-    router.replace("/");
+    setLoading(true);
+
+    try {
+      const { token, user } = await login({ email, password, device_name: Platform.OS });
+      signIn(token, user);
+      router.replace("/");
+    } catch (e) {
+      // 422: credenciales incorrectas o bloqueo; 403: correo sin verificar. El backend ya manda el texto.
+      setError(e instanceof ApiError ? (e.field("email") ?? e.message) : "Ocurrió un error inesperado.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -72,7 +83,12 @@ export default function LoginScreen() {
           </ThemedText>
         )}
 
-        <Button title="Iniciar sesión" onPress={handleLogin} style={styles.button} />
+        <Button
+          title="Iniciar sesión"
+          onPress={handleLogin}
+          loading={loading}
+          style={styles.button}
+        />
       </View>
 
       <AuthFooter

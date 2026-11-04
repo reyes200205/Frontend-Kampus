@@ -1,15 +1,19 @@
 /**
- * Sesión temporal en memoria para poder recorrer la app mientras no hay backend.
- * Se pierde al recargar. TODO (T-06): reemplazar por el token de Sanctum guardado de forma segura.
+ * Sesión en memoria con el token de Sanctum que devuelve `POST /api/login`.
+ * Se pierde al recargar. TODO (T-06): guardar el token de forma segura (expo-secure-store).
  */
 
 import { useSyncExternalStore } from 'react';
 
-let isSignedIn = false;
+import type { User } from '@/services/api';
+
+type Session = { token: string; user: User } | null;
+
+let session: Session = null;
 const listeners = new Set<() => void>();
 
-function setSignedIn(value: boolean) {
-  isSignedIn = value;
+function setSession(value: Session) {
+  session = value;
   listeners.forEach((listener) => listener());
 }
 
@@ -18,15 +22,19 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-export function signIn() {
-  setSignedIn(true);
+export function signIn(token: string, user: User) {
+  setSession({ token, user });
 }
 
 export function signOut() {
-  setSignedIn(false);
+  setSession(null);
+}
+
+export function getToken() {
+  return session?.token ?? null;
 }
 
 export function useSession() {
-  const signedIn = useSyncExternalStore(subscribe, () => isSignedIn, () => false);
-  return { isSignedIn: signedIn };
+  const current = useSyncExternalStore(subscribe, () => session, () => null);
+  return { isSignedIn: current !== null, user: current?.user ?? null };
 }
