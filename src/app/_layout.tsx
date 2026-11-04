@@ -9,6 +9,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ActiveTheme, ActiveThemeMode, Themes } from '@/constants/theme';
 
@@ -45,16 +46,19 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ThemeProvider value={navigationTheme}>
-      <StatusBar style={ActiveThemeMode === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="auth/login/index" />
-        <Stack.Screen name="auth/verify-email/index" />
-        <Stack.Screen name="profile/edit" />
-        <Stack.Screen name="legal/privacy" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="legal/guidelines" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    // Necesario para los gestos de swipe en Descubrir (react-native-gesture-handler).
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={navigationTheme}>
+        <StatusBar style={ActiveThemeMode === 'dark' ? 'light' : 'dark'} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auth/login/index" />
+          <Stack.Screen name="auth/verify-email/index" />
+          <Stack.Screen name="profile/edit" />
+          <Stack.Screen name="legal/privacy" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="legal/guidelines" options={{ presentation: 'modal' }} />
+        </Stack>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
