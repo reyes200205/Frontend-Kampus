@@ -15,6 +15,7 @@ import {
   MaxBioLength,
   MaxCareerLength,
   MaxSemester,
+  latestBirthdate,
   MinInterests,
   validateBirthdate,
 } from "@/constants/profile";
@@ -26,14 +27,8 @@ import { ApiError } from "@/services/api";
 import { getInterests, updateInterests, updateProfile } from "@/services/profile";
 import type { Interest, Profile, ProfileUpdate } from "@/types/profile";
 
-/** Límite inferior razonable del selector; el backend solo exige que sea antes de hoy. */
+/** Límite inferior razonable del selector; el superior es la edad mínima de 17 años (T-49). */
 const MinBirthdate = new Date(1940, 0, 1);
-
-function yesterday() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  return date;
-}
 
 type FormErrors = Partial<
   Record<"name" | "career" | "semester" | "birthdate" | "bio" | "interests" | "form", string>
@@ -207,7 +202,7 @@ function EditProfileForm({ profile }: { profile: Profile }) {
           hint="Solo se muestra tu edad."
           error={errors.birthdate}
           minimumDate={MinBirthdate}
-          maximumDate={yesterday()}
+          maximumDate={latestBirthdate()}
         />
         <TextField
           label="Sobre mí"

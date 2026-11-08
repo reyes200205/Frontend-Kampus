@@ -26,6 +26,11 @@ export function signIn(token: string, user: User) {
   setSession({ token, user });
 }
 
+/** Actualiza datos del usuario de la sesión, p. ej. al terminar el perfil por pasos (T-49). */
+export function updateSessionUser(changes: Partial<User>) {
+  if (session) setSession({ ...session, user: { ...session.user, ...changes } });
+}
+
 export function signOut() {
   setSession(null);
 }

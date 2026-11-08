@@ -14,6 +14,8 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly fieldErrors: Record<string, string[]> = {},
+    /** Código propio de la API para casos que la app trata aparte (p. ej. `profile_incomplete`). */
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -59,6 +61,7 @@ export async function apiRequest<T>(
       data?.message ?? "Ocurrió un error inesperado. Intenta de nuevo.",
       response.status,
       data?.errors ?? {},
+      data?.code,
     );
   }
 

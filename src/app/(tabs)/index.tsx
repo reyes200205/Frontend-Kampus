@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useState } from "react";
 import {
@@ -161,6 +162,18 @@ function DeckArea({ discovery, onAdjustFilters }: { discovery: Discovery; onAdju
       <View style={[styles.center, { height: cardHeight }]}>
         <ActivityIndicator color={theme.accent} size="large" />
       </View>
+    );
+  }
+
+  // El perfil dejó de estar completo (p. ej. borró su única foto): se le pide terminarlo (T-49).
+  if (discovery.status === "error" && discovery.errorCode === "profile_incomplete") {
+    return (
+      <EmptyState
+        icon={{ ios: "person.crop.circle.badge.exclamationmark", android: "person_alert", web: "person_alert" }}
+        title="Completa tu perfil"
+        message="Para descubrir a otros estudiantes, tu perfil necesita tus datos, al menos una foto y algo sobre ti."
+        action={{ title: "Completar mi perfil", onPress: () => router.push("/onboarding") }}
+      />
     );
   }
 

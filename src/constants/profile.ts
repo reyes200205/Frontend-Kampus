@@ -1,11 +1,29 @@
 /** Reglas y formato de los datos del perfil (T-08, RF-03). Los límites coinciden con el backend. */
 
+import type { Gender } from "@/types/profile";
+
 export const MaxSemester = 12;
 export const MaxCareerLength = 120;
 export const MaxBioLength = 300;
 export const MaxProfilePhotos = 5;
 export const MinInterests = 3;
 export const MaxInterests = 20;
+/** Edad mínima para usar Kampus (T-49); el backend aplica la misma regla. */
+export const MinAge = 17;
+
+/** Opciones de género con el texto que ve el estudiante (T-49). */
+export const GenderOptions: { value: Gender; label: string }[] = [
+  { value: "mujer", label: "Mujer" },
+  { value: "hombre", label: "Hombre" },
+  { value: "no_binario", label: "No binario" },
+  { value: "prefiero_no_decir", label: "Prefiero no decir" },
+];
+
+/** Fecha de nacimiento más reciente que se acepta: hoy hace 17 años. */
+export function latestBirthdate(): Date {
+  const today = new Date();
+  return new Date(today.getFullYear() - MinAge, today.getMonth(), today.getDate());
+}
 
 /** Nombre visible de las categorías del catálogo de intereses (el backend manda la clave). */
 const InterestCategoryLabels: Record<string, string> = {
@@ -40,6 +58,7 @@ export function validateBirthdate(value: string): string | undefined {
   const date = parseBirthdate(value);
   if (!date) return "Esa fecha no existe. Revisa el día y el mes.";
   if (date >= new Date()) return "La fecha debe ser anterior a hoy.";
+  if (date > latestBirthdate()) return `Debes tener al menos ${MinAge} años para usar Kampus.`;
   return undefined;
 }
 
