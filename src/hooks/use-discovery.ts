@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { addMatch } from "@/hooks/use-matches";
 import { ApiError } from "@/services/api";
 import { getDiscovery, swipe } from "@/services/discovery";
 import type { DiscoveryCard, Match } from "@/types/discovery";
@@ -83,7 +84,10 @@ export function useDiscovery() {
 
     try {
       const data = await swipe(card.id, liked);
-      if (data.match) setMatch(data.match);
+      if (data.match) {
+        setMatch(data.match);
+        addMatch(data.match);
+      }
     } catch (e) {
       // 409: ya se había evaluado (otra pestaña o un doble toque). No hay nada que deshacer.
       if (e instanceof ApiError && e.status === 409) return;
