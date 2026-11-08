@@ -10,6 +10,8 @@ export type User = {
   email_verified_at: string | null;
   role: UserRole;
   university_id: number | null;
+  /** `false` mientras el estudiante no termina su perfil por pasos (T-49). El staff siempre trae `true`. */
+  profile_completed: boolean;
 };
 
 export type RegisterRequest = {

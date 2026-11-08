@@ -19,6 +19,8 @@ export function useDiscovery() {
   const [cards, setCards] = useState<DiscoveryCard[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
+  /** Código de la API del último error, p. ej. `profile_incomplete` (T-49). */
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   /** La API ya no tiene más perfiles con estos filtros. */
   const [exhausted, setExhausted] = useState(false);
   const [match, setMatch] = useState<Match | null>(null);
@@ -51,6 +53,7 @@ export function useDiscovery() {
       if (current !== generation.current) return;
       setStatus((previous) => (previous === "loading" ? "error" : previous));
       setError(e instanceof ApiError ? e.message : "No se pudieron cargar los perfiles.");
+      setErrorCode(e instanceof ApiError ? (e.code ?? null) : null);
     } finally {
       fetching.current = false;
     }
@@ -109,6 +112,7 @@ export function useDiscovery() {
     cards,
     status,
     error,
+    errorCode,
     exhausted,
     match,
     decide,
