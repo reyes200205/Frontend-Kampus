@@ -19,6 +19,7 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { clearMatches } from "@/hooks/use-matches";
 import { clearProfile, loadProfile, useProfile } from "@/hooks/use-profile";
 import { signOut } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
@@ -44,6 +45,7 @@ export default function ProfileScreen() {
     // Revoca el token en el backend; si falla (sin red, token vencido) igual se cierra la sesión local.
     await logout().catch(() => undefined);
     clearProfile();
+    clearMatches();
     signOut();
     router.replace("/auth/login");
   }
