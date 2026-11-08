@@ -1,5 +1,6 @@
+import { router, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -22,6 +23,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { BottomTabInset, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useDiscovery } from "@/hooks/use-discovery";
+import { loadLocation, useLocation } from "@/hooks/use-location";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
 import { EmptyFilters, getDiscoveryFilters, saveDiscoveryFilters } from "@/services/discovery";
@@ -108,12 +110,7 @@ export default function DiscoverScreen() {
       </View>
 
       {mode === "nearby" ? (
-        // TODO (T-30): mapa por zonas en "Cerca".
-        <EmptyState
-          icon={{ ios: "map", android: "map", web: "map" }}
-          title="Gente cerca de ti"
-          message="Verás en un mapa a quienes estudian en tu zona, sin mostrar nunca su ubicación exacta."
-        />
+        <NearbyArea />
       ) : (
         <View style={[styles.forYou, isDesktop && styles.forYouDesktop]}>
           <View style={styles.deckColumn}>
@@ -140,6 +137,60 @@ export default function DiscoverScreen() {
 }
 
 type Discovery = ReturnType<typeof useDiscovery>;
+
+/**
+ * Modo "Cerca". Si el alumno no ha activado "Cerca de ti", se lo recuerda con un botón que lo lleva a
+ * activarlo (T-36). Con "Cerca de ti" activo, aquí irá el mapa por zonas (T-30).
+ */
+function NearbyArea() {
+  const theme = useTheme();
+  const { location, loading, error } = useLocation();
+
+  // Al volver de activarlo (o de apagarlo) en el perfil, el estado se actualiza.
+  useFocusEffect(
+    useCallback(() => {
+      void loadLocation();
+    }, []),
+  );
+
+  if (!location) {
+    if (error && !loading) {
+      return (
+        <EmptyState
+          icon={{ ios: "wifi.exclamationmark", android: "wifi_off", web: "wifi_off" }}
+          title="No pudimos revisar tu ubicación"
+          message={error}
+          action={{ title: "Reintentar", onPress: () => void loadLocation() }}
+        />
+      );
+    }
+    return (
+      <View style={[styles.center, styles.nearbyLoading]}>
+        <ActivityIndicator color={theme.accent} size="large" />
+      </View>
+    );
+  }
+
+  if (!location.nearby_enabled) {
+    return (
+      <EmptyState
+        icon={{ ios: "location.slash", android: "location_off", web: "location_off" }}
+        title="Activa Cerca de ti"
+        message="Para ver a quienes estudian en tu zona, primero comparte tu zona aproximada. Solo se comparte una celda de 1 km, nunca tu ubicación exacta."
+        action={{ title: "Activar Cerca de ti", onPress: () => router.push("/profile/location") }}
+      />
+    );
+  }
+
+  // TODO (T-30): mapa por zonas en "Cerca".
+  return (
+    <EmptyState
+      icon={{ ios: "map", android: "map", web: "map" }}
+      title="Gente cerca de ti"
+      message="Ya compartes tu zona. Muy pronto verás aquí en un mapa a quienes estudian cerca, sin mostrar nunca su ubicación exacta."
+    />
+  );
+}
 
 function DeckArea({ discovery, onAdjustFilters }: { discovery: Discovery; onAdjustFilters: () => void }) {
   const theme = useTheme();
@@ -333,6 +384,10 @@ const styles = StyleSheet.create({
   center: {
     alignItems: "center",
     justifyContent: "center",
+  },
+  nearbyLoading: {
+    flexGrow: 1,
+    paddingVertical: Spacing.six,
   },
   notice: {
     flexDirection: "row",
