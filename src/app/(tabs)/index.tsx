@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { FiltersPanel, countActiveFilters } from "@/components/discover/filters-panel";
 import { SwipeDeck } from "@/components/discover/swipe-deck";
+import { MatchModal } from "@/components/matches/match-modal";
 import { Screen } from "@/components/layout/screen";
 import { ThemedText } from "@/components/themed-text";
 import { Card } from "@/components/ui/card";
@@ -126,6 +127,15 @@ export default function DiscoverScreen() {
           )}
         </View>
       )}
+
+      <MatchModal
+        match={discovery.match}
+        onClose={discovery.dismissMatch}
+        onSeeMatches={() => {
+          discovery.dismissMatch();
+          router.navigate("/chats");
+        }}
+      />
 
       {!isDesktop && (
         <FiltersSheet visible={filtersOpen} onClose={() => setFiltersOpen(false)}>
@@ -249,33 +259,19 @@ function DeckArea({ discovery, onAdjustFilters }: { discovery: Discovery; onAdju
   );
 }
 
-/** Avisos sobre el mazo: un match nuevo o un error al guardar el swipe. */
+/** Aviso sobre el mazo cuando no se pudo guardar un swipe. El match se muestra en `MatchModal`. */
 function Notices({ discovery }: { discovery: Discovery }) {
-  const { match, error, status } = discovery;
+  const { error, status } = discovery;
+
+  if (!error || status !== "ready") return null;
 
   return (
-    <>
-      {/* TODO (T-12): reemplazar por la pantalla "Es un match". */}
-      {match && (
-        <Card highlighted style={styles.notice}>
-          <View style={styles.flex}>
-            <ThemedText type="smallBold">¡Es un match!</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Tú y {match.user.name} se interesaron mutuamente.
-            </ThemedText>
-          </View>
-          <CloseButton label="Cerrar aviso de match" onPress={discovery.dismissMatch} />
-        </Card>
-      )}
-      {error && status === "ready" && (
-        <Card style={styles.notice}>
-          <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.flex}>
-            {error}
-          </ThemedText>
-          <CloseButton label="Cerrar aviso" onPress={discovery.dismissError} />
-        </Card>
-      )}
-    </>
+    <Card style={styles.notice}>
+      <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.flex}>
+        {error}
+      </ThemedText>
+      <CloseButton label="Cerrar aviso" onPress={discovery.dismissError} />
+    </Card>
   );
 }
 

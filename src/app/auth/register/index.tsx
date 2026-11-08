@@ -9,7 +9,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
-import { isInstitutionalEmail, MinPasswordLength } from "@/constants/auth";
+import { capitalizeWords, isInstitutionalEmail, MinPasswordLength } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
 import { ApiError } from "@/services/api";
 import { register } from "@/services/auth";
@@ -108,7 +108,7 @@ export default function RegisterScreen() {
           icon={{ ios: "person", android: "person", web: "person" }}
           placeholder="Nombre"
           value={firstName}
-          onChangeText={setFirstName}
+          onChangeText={(value) => setFirstName(capitalizeWords(value))}
           error={errors.firstName}
           autoCapitalize="words"
           autoComplete="given-name"
@@ -119,7 +119,7 @@ export default function RegisterScreen() {
           icon={{ ios: "person", android: "person", web: "person" }}
           placeholder="Apellido"
           value={lastName}
-          onChangeText={setLastName}
+          onChangeText={(value) => setLastName(capitalizeWords(value))}
           error={errors.lastName}
           autoCapitalize="words"
           autoComplete="family-name"

@@ -20,6 +20,7 @@ import {
 } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { clearLocation, loadLocation, useLocation } from "@/hooks/use-location";
+import { clearMatches } from "@/hooks/use-matches";
 import { clearProfile, loadProfile, useProfile } from "@/hooks/use-profile";
 import { signOut } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
@@ -48,6 +49,7 @@ export default function ProfileScreen() {
     await logout().catch(() => undefined);
     clearProfile();
     clearLocation();
+    clearMatches();
     signOut();
     router.replace("/auth/login");
   }
