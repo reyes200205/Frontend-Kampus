@@ -1,15 +1,15 @@
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Screen } from "@/components/layout/screen";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { Spacing } from "@/constants/theme";
+import { MaxFormWidth, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { loadLocation, setLocation, useLocation } from "@/hooks/use-location";
 import { useSession } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
@@ -22,6 +22,11 @@ type Busy = "zone" | "nearby" | null;
 
 function apiMessage(e: unknown, fallback: string) {
   return e instanceof ApiError ? e.message : fallback;
+}
+
+function goBack() {
+  if (router.canGoBack()) router.back();
+  else router.replace("/profile");
 }
 
 /**
@@ -43,12 +48,15 @@ export default function LocationScreen() {
   // Primero los campus (el de su universidad al inicio) y después las colonias.
   const campuses = zones
     .filter((zone) => zone.type === "campus")
-    .sort((a, b) => Number(b.university_id === user?.university_id) - Number(a.university_id === user?.university_id));
+    .sort(
+      (a, b) =>
+        Number(b.university_id === user?.university_id) - Number(a.university_id === user?.university_id),
+    );
   const neighborhoods = zones.filter((zone) => zone.type === "colonia");
-  const selectedId = location?.zone?.id ?? null;
+  const selected = location?.zone ?? null;
 
   async function chooseZone(zone: Zone | null) {
-    if (busy || zone?.id === selectedId) return;
+    if (busy || zone?.id === selected?.id) return;
     setBusy("zone");
     setMessage(null);
     try {
@@ -105,139 +113,231 @@ export default function LocationScreen() {
     }
   }
 
-  const done = <Button title="Listo" variant="ghost" onPress={() => router.back()} />;
+  return (
+    <SafeAreaView edges={["top", "left", "right", "bottom"]} style={[styles.flex, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Regresar a tu perfil"
+          hitSlop={Spacing.two}
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+        >
+          <SymbolView
+            name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
+            size={22}
+            tintColor={theme.text}
+          />
+        </Pressable>
+        <ThemedText type="heading" numberOfLines={1} accessibilityRole="header" style={styles.flex}>
+          Zona y Cerca de ti
+        </ThemedText>
+      </View>
 
-  if (!location) {
-    return (
-      <Screen title="Zona y Cerca de ti" action={done}>
-        <Card style={styles.state}>
-          {loading || !error ? (
-            <ActivityIndicator color={theme.accent} />
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.inner}>
+          {!location ? (
+            <Card style={styles.state}>
+              {loading || !error ? (
+                <ActivityIndicator color={theme.accent} />
+              ) : (
+                <>
+                  <ThemedText type="small" themeColor="danger" style={styles.center}>
+                    {error}
+                  </ThemedText>
+                  <Button
+                    title="Reintentar"
+                    variant="secondary"
+                    onPress={() => void loadLocation({ withZones: true })}
+                  />
+                </>
+              )}
+            </Card>
           ) : (
             <>
-              <ThemedText type="small" themeColor="danger" style={styles.center}>
-                {error}
+              <ThemedText type="small" themeColor="textSecondary">
+                Ayuda a que te encuentren estudiantes cerca de ti, sin mostrar dónde estás.
               </ThemedText>
-              <Button title="Reintentar" variant="secondary" onPress={() => void loadLocation({ withZones: true })} />
+
+              <Card style={styles.card}>
+                <CardHeader
+                  icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
+                  title="Tu zona"
+                  subtitle={selected ? selected.name : "Sin zona elegida"}
+                  trailing={busy === "zone" ? <ActivityIndicator color={theme.accent} /> : undefined}
+                />
+                <ThemedText type="small" themeColor="textSecondary">
+                  Elige tu campus o tu colonia. Se muestra en tu perfil y en el mapa de Cerca.
+                </ThemedText>
+
+                {zones.length === 0 ? (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Todavía no hay zonas disponibles. Intenta más tarde.
+                  </ThemedText>
+                ) : (
+                  <>
+                    <ZoneGroup title="Campus" zones={campuses} selectedId={selected?.id} onChoose={chooseZone} />
+                    <ZoneGroup title="Colonias" zones={neighborhoods} selectedId={selected?.id} onChoose={chooseZone} />
+                  </>
+                )}
+
+                {selected && (
+                  <Button
+                    title="Quitar mi zona"
+                    variant="ghost"
+                    disabled={busy !== null}
+                    onPress={() => void chooseZone(null)}
+                  />
+                )}
+              </Card>
+
+              <Card highlighted={location.nearby_enabled} style={styles.card}>
+                <CardHeader
+                  icon={{ ios: "location.circle", android: "my_location", web: "my_location" }}
+                  title="Cerca de ti"
+                  subtitle={location.nearby_enabled ? "Compartes una zona aproximada" : "No compartes tu ubicación"}
+                  trailing={<StatusPill active={location.nearby_enabled} />}
+                />
+
+                {location.nearby_enabled ? (
+                  <>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Apareces con una celda de alrededor de 1 km. Actualízala si cambias de lugar.
+                    </ThemedText>
+                    <Button
+                      title="Actualizar mi ubicación"
+                      variant="secondary"
+                      icon={{ ios: "arrow.clockwise", android: "refresh", web: "refresh" }}
+                      loading={busy === "nearby"}
+                      disabled={busy !== null}
+                      onPress={() => void turnOnNearby()}
+                    />
+                    <Button
+                      title="Apagar Cerca de ti"
+                      variant="ghost"
+                      disabled={busy !== null}
+                      onPress={() => void turnOffNearby()}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Te pediremos permiso para usar tu ubicación. Esto es lo que compartes:
+                    </ThemedText>
+                    <View style={styles.points}>
+                      <Point
+                        icon={{ ios: "square.grid.3x3", android: "grid_on", web: "grid_on" }}
+                        text="Solo una celda de alrededor de 1 km. Tu ubicación exacta nunca sale de tu celular."
+                      />
+                      <Point
+                        icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
+                        text="En el mapa apareces en el centro de tu zona, no donde estás."
+                      />
+                      <Point
+                        icon={{ ios: "trash", android: "delete", web: "delete" }}
+                        text="Puedes apagarlo cuando quieras y tu celda se borra."
+                      />
+                    </View>
+                    <Button
+                      title="Activar Cerca de ti"
+                      icon={{ ios: "location", android: "near_me", web: "near_me" }}
+                      loading={busy === "nearby"}
+                      disabled={busy !== null}
+                      onPress={() => void turnOnNearby()}
+                    />
+                  </>
+                )}
+              </Card>
+
+              {message && (
+                <ThemedText
+                  type="small"
+                  themeColor={message.danger ? "danger" : "textSecondary"}
+                  accessibilityRole="alert"
+                  style={styles.center}
+                >
+                  {message.text}
+                </ThemedText>
+              )}
             </>
           )}
-        </Card>
-      </Screen>
-    );
-  }
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+/** Encabezado de una tarjeta: ícono en círculo, título, dato corto y algo a la derecha. */
+function CardHeader({
+  icon,
+  title,
+  subtitle,
+  trailing,
+}: {
+  icon: SymbolViewProps["name"];
+  title: string;
+  subtitle: string;
+  trailing?: ReactNode;
+}) {
+  const theme = useTheme();
 
   return (
-    <Screen
-      title="Zona y Cerca de ti"
-      subtitle="Ayuda a que te encuentren estudiantes cerca de ti, sin mostrar dónde estás."
-      action={done}
+    <View style={styles.cardHeader}>
+      <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSelected }]}>
+        <SymbolView name={icon} size={20} tintColor={theme.accent} />
+      </View>
+      <View style={styles.flex}>
+        <ThemedText type="smallBold">{title}</ThemedText>
+        <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>
+          {subtitle}
+        </ThemedText>
+      </View>
+      {trailing}
+    </View>
+  );
+}
+
+function ZoneGroup({
+  title,
+  zones,
+  selectedId,
+  onChoose,
+}: {
+  title: string;
+  zones: Zone[];
+  selectedId: number | undefined;
+  onChoose: (zone: Zone) => void;
+}) {
+  if (zones.length === 0) return null;
+
+  return (
+    <View style={styles.group}>
+      <ThemedText type="caption" themeColor="textSecondary">
+        {title.toUpperCase()}
+      </ThemedText>
+      <View style={styles.chips}>
+        {zones.map((zone) => (
+          <Chip key={zone.id} label={zone.name} selected={zone.id === selectedId} onPress={() => onChoose(zone)} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function StatusPill({ active }: { active: boolean }) {
+  const theme = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.pill,
+        active ? { backgroundColor: theme.accent } : { backgroundColor: theme.backgroundSelected },
+      ]}
     >
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <ThemedText type="heading" style={styles.flex}>
-            Tu zona
-          </ThemedText>
-          {busy === "zone" && <ActivityIndicator color={theme.accent} />}
-        </View>
-        <ThemedText type="small" themeColor="textSecondary">
-          Elige tu campus y, si quieres, tu colonia. Se muestra en tu perfil y en el mapa de Cerca.
-        </ThemedText>
-
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          Campus
-        </ThemedText>
-        <View style={styles.chips}>
-          {campuses.map((zone) => (
-            <Chip key={zone.id} label={zone.name} selected={zone.id === selectedId} onPress={() => void chooseZone(zone)} />
-          ))}
-        </View>
-
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          Colonias
-        </ThemedText>
-        <View style={styles.chips}>
-          {neighborhoods.map((zone) => (
-            <Chip key={zone.id} label={zone.name} selected={zone.id === selectedId} onPress={() => void chooseZone(zone)} />
-          ))}
-        </View>
-
-        {selectedId !== null && (
-          <Button
-            title="Quitar mi zona"
-            variant="ghost"
-            disabled={busy !== null}
-            onPress={() => void chooseZone(null)}
-            style={styles.alignStart}
-          />
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="heading">Cerca de ti</ThemedText>
-
-        {location.nearby_enabled ? (
-          <Card highlighted style={styles.nearbyCard}>
-            <View style={styles.row}>
-              <SymbolView
-                name={{ ios: "location.circle.fill", android: "my_location", web: "my_location" }}
-                size={28}
-                tintColor={theme.accent}
-              />
-              <View style={styles.flex}>
-                <ThemedText type="smallBold">Cerca de ti está activo</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Compartes una celda aproximada de 1 km. Actualízala si cambias de lugar.
-                </ThemedText>
-              </View>
-            </View>
-            <Button
-              title="Actualizar mi ubicación"
-              variant="secondary"
-              icon={{ ios: "arrow.clockwise", android: "refresh", web: "refresh" }}
-              loading={busy === "nearby"}
-              disabled={busy !== null}
-              onPress={() => void turnOnNearby()}
-            />
-            <Button title="Apagar Cerca de ti" variant="ghost" disabled={busy !== null} onPress={() => void turnOffNearby()} />
-          </Card>
-        ) : (
-          <Card style={styles.nearbyCard}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Al activarlo te pediremos permiso para usar tu ubicación. Antes, esto es lo que compartes:
-            </ThemedText>
-            <Point
-              icon={{ ios: "square.grid.3x3", android: "grid_on", web: "grid_on" }}
-              text="Solo una celda de alrededor de 1 km. Tu ubicación exacta nunca sale de tu celular."
-            />
-            <Point
-              icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
-              text="En el mapa apareces en el centro de tu zona, no donde estás."
-            />
-            <Point
-              icon={{ ios: "trash", android: "delete", web: "delete" }}
-              text="Puedes apagarlo cuando quieras y tu celda se borra."
-            />
-            <Button
-              title="Activar Cerca de ti"
-              icon={{ ios: "location", android: "near_me", web: "near_me" }}
-              loading={busy === "nearby"}
-              disabled={busy !== null}
-              onPress={() => void turnOnNearby()}
-            />
-          </Card>
-        )}
-      </View>
-
-      {message && (
-        <ThemedText
-          type="small"
-          themeColor={message.danger ? "danger" : "textSecondary"}
-          accessibilityRole="alert"
-        >
-          {message.text}
-        </ThemedText>
-      )}
-    </Screen>
+      <ThemedText type="caption" style={{ color: active ? theme.onAccent : theme.textSecondary }}>
+        {active ? "Activo" : "Apagado"}
+      </ThemedText>
+    </View>
   );
 }
 
@@ -245,8 +345,8 @@ function Point({ icon, text }: { icon: SymbolViewProps["name"]; text: string }) 
   const theme = useTheme();
 
   return (
-    <View style={styles.row}>
-      <SymbolView name={icon} size={20} tintColor={theme.accent} />
+    <View style={styles.point}>
+      <SymbolView name={icon} size={18} tintColor={theme.accent} />
       <ThemedText type="small" style={styles.flex}>
         {text}
       </ThemedText>
@@ -261,17 +361,56 @@ const styles = StyleSheet.create({
   center: {
     textAlign: "center",
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  back: {
+    width: MinTouchSize,
+    height: MinTouchSize,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.five,
+  },
+  inner: {
+    width: "100%",
+    maxWidth: MaxFormWidth,
+    alignSelf: "center",
+    gap: Spacing.three,
+  },
   state: {
     alignItems: "center",
     gap: Spacing.three,
     paddingVertical: Spacing.five,
   },
-  section: {
+  card: {
     gap: Spacing.three,
   },
-  sectionHeader: {
+  cardHeader: {
     flexDirection: "row",
     alignItems: "center",
+    gap: Spacing.three,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  group: {
     gap: Spacing.two,
   },
   chips: {
@@ -279,16 +418,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: Spacing.two,
   },
-  alignStart: {
-    alignSelf: "flex-start",
+  pill: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    borderRadius: Radius.full,
   },
-  nearbyCard: {
+  points: {
     gap: Spacing.three,
-    padding: Spacing.four,
   },
-  row: {
+  point: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: Spacing.three,
   },
 });
