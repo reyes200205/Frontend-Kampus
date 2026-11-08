@@ -39,3 +39,11 @@ export type VerifyEmailParams = {
   expires: string;
   signature: string;
 };
+
+/** Cuerpo de `POST /reset-password`: `token` y `email` vienen en el enlace del correo. */
+export type ResetPasswordRequest = {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+};

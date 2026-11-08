@@ -1,6 +1,6 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { FiltersPanel, countActiveFilters } from "@/components/discover/filters-panel";
 import { SwipeDeck } from "@/components/discover/swipe-deck";
+import { MatchModal } from "@/components/matches/match-modal";
 import { Screen } from "@/components/layout/screen";
 import { ThemedText } from "@/components/themed-text";
 import { Card } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { BottomTabInset, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useDiscovery } from "@/hooks/use-discovery";
+import { loadLocation, useLocation } from "@/hooks/use-location";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
 import { EmptyFilters, getDiscoveryFilters, saveDiscoveryFilters } from "@/services/discovery";
@@ -109,12 +111,7 @@ export default function DiscoverScreen() {
       </View>
 
       {mode === "nearby" ? (
-        // TODO (T-30): mapa por zonas en "Cerca".
-        <EmptyState
-          icon={{ ios: "map", android: "map", web: "map" }}
-          title="Gente cerca de ti"
-          message="Verás en un mapa a quienes estudian en tu zona, sin mostrar nunca su ubicación exacta."
-        />
+        <NearbyArea />
       ) : (
         <View style={[styles.forYou, isDesktop && styles.forYouDesktop]}>
           <View style={styles.deckColumn}>
@@ -131,6 +128,15 @@ export default function DiscoverScreen() {
         </View>
       )}
 
+      <MatchModal
+        match={discovery.match}
+        onClose={discovery.dismissMatch}
+        onSeeMatches={() => {
+          discovery.dismissMatch();
+          router.navigate("/chats");
+        }}
+      />
+
       {!isDesktop && (
         <FiltersSheet visible={filtersOpen} onClose={() => setFiltersOpen(false)}>
           {panel}
@@ -141,6 +147,60 @@ export default function DiscoverScreen() {
 }
 
 type Discovery = ReturnType<typeof useDiscovery>;
+
+/**
+ * Modo "Cerca". Si el alumno no ha activado "Cerca de ti", se lo recuerda con un botón que lo lleva a
+ * activarlo (T-36). Con "Cerca de ti" activo, aquí irá el mapa por zonas (T-30).
+ */
+function NearbyArea() {
+  const theme = useTheme();
+  const { location, loading, error } = useLocation();
+
+  // Al volver de activarlo (o de apagarlo) en el perfil, el estado se actualiza.
+  useFocusEffect(
+    useCallback(() => {
+      void loadLocation();
+    }, []),
+  );
+
+  if (!location) {
+    if (error && !loading) {
+      return (
+        <EmptyState
+          icon={{ ios: "wifi.exclamationmark", android: "wifi_off", web: "wifi_off" }}
+          title="No pudimos revisar tu ubicación"
+          message={error}
+          action={{ title: "Reintentar", onPress: () => void loadLocation() }}
+        />
+      );
+    }
+    return (
+      <View style={[styles.center, styles.nearbyLoading]}>
+        <ActivityIndicator color={theme.accent} size="large" />
+      </View>
+    );
+  }
+
+  if (!location.nearby_enabled) {
+    return (
+      <EmptyState
+        icon={{ ios: "location.slash", android: "location_off", web: "location_off" }}
+        title="Activa Cerca de ti"
+        message="Para ver a quienes estudian en tu zona, primero comparte tu zona aproximada. Solo se comparte una celda de 1 km, nunca tu ubicación exacta."
+        action={{ title: "Activar Cerca de ti", onPress: () => router.push("/profile/location") }}
+      />
+    );
+  }
+
+  // TODO (T-30): mapa por zonas en "Cerca".
+  return (
+    <EmptyState
+      icon={{ ios: "map", android: "map", web: "map" }}
+      title="Gente cerca de ti"
+      message="Ya compartes tu zona. Muy pronto verás aquí en un mapa a quienes estudian cerca, sin mostrar nunca su ubicación exacta."
+    />
+  );
+}
 
 function DeckArea({ discovery, onAdjustFilters }: { discovery: Discovery; onAdjustFilters: () => void }) {
   const theme = useTheme();
@@ -211,33 +271,19 @@ function DeckArea({ discovery, onAdjustFilters }: { discovery: Discovery; onAdju
   );
 }
 
-/** Avisos sobre el mazo: un match nuevo o un error al guardar el swipe. */
+/** Aviso sobre el mazo cuando no se pudo guardar un swipe. El match se muestra en `MatchModal`. */
 function Notices({ discovery }: { discovery: Discovery }) {
-  const { match, error, status } = discovery;
+  const { error, status } = discovery;
+
+  if (!error || status !== "ready") return null;
 
   return (
-    <>
-      {/* TODO (T-12): reemplazar por la pantalla "Es un match". */}
-      {match && (
-        <Card highlighted style={styles.notice}>
-          <View style={styles.flex}>
-            <ThemedText type="smallBold">¡Es un match!</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Tú y {match.user.name} se interesaron mutuamente.
-            </ThemedText>
-          </View>
-          <CloseButton label="Cerrar aviso de match" onPress={discovery.dismissMatch} />
-        </Card>
-      )}
-      {error && status === "ready" && (
-        <Card style={styles.notice}>
-          <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.flex}>
-            {error}
-          </ThemedText>
-          <CloseButton label="Cerrar aviso" onPress={discovery.dismissError} />
-        </Card>
-      )}
-    </>
+    <Card style={styles.notice}>
+      <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.flex}>
+        {error}
+      </ThemedText>
+      <CloseButton label="Cerrar aviso" onPress={discovery.dismissError} />
+    </Card>
   );
 }
 
@@ -346,6 +392,10 @@ const styles = StyleSheet.create({
   center: {
     alignItems: "center",
     justifyContent: "center",
+  },
+  nearbyLoading: {
+    flexGrow: 1,
+    paddingVertical: Spacing.six,
   },
   notice: {
     flexDirection: "row",

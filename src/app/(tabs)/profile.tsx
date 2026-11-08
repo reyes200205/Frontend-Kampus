@@ -19,6 +19,8 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { clearLocation, loadLocation, useLocation } from "@/hooks/use-location";
+import { clearMatches } from "@/hooks/use-matches";
 import { clearProfile, loadProfile, useProfile } from "@/hooks/use-profile";
 import { signOut } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
@@ -32,11 +34,13 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const { isTablet } = useBreakpoint();
   const { profile: data, loading, error } = useProfile();
+  const { location } = useLocation();
 
   // Se pide al entrar a la pestaña: así también se renuevan las URL firmadas de las fotos.
   useFocusEffect(
     useCallback(() => {
       loadProfile();
+      void loadLocation();
     }, []),
   );
 
@@ -44,6 +48,8 @@ export default function ProfileScreen() {
     // Revoca el token en el backend; si falla (sin red, token vencido) igual se cierra la sesión local.
     await logout().catch(() => undefined);
     clearProfile();
+    clearLocation();
+    clearMatches();
     signOut();
     router.replace("/auth/login");
   }
@@ -75,6 +81,9 @@ export default function ProfileScreen() {
   }
 
   const details = data.profile;
+  const locationSummary = location
+    ? [location.zone?.name ?? "Sin zona", location.nearby_enabled ? "Cerca de ti activo" : "Cerca de ti apagado"].join(" · ")
+    : undefined;
   const photos = details?.photos ?? [];
   const interests = details?.interests ?? [];
   const age = ageFromBirthdate(details?.birthdate ?? null);
@@ -161,6 +170,13 @@ export default function ProfileScreen() {
 
             <Card style={styles.menu}>
               <MenuRow
+                icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
+                label="Zona y Cerca de ti"
+                value={locationSummary}
+                href="/profile/location"
+              />
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <MenuRow
                 icon={{ ios: "lock.shield", android: "shield", web: "shield" }}
                 label="Aviso de privacidad"
                 href="/legal/privacy"
@@ -232,10 +248,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function MenuRow({
   icon,
   label,
+  value,
   href,
 }: {
   icon: SymbolViewProps["name"];
   label: string;
+  /** Dato corto debajo del texto (p. ej. la zona elegida). */
+  value?: string;
   href: Href;
 }) {
   const theme = useTheme();
@@ -247,7 +266,14 @@ function MenuRow({
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <SymbolView name={icon} size={20} tintColor={theme.textSecondary} />
-      <ThemedText style={styles.flex}>{label}</ThemedText>
+      <View style={styles.flex}>
+        <ThemedText>{label}</ThemedText>
+        {value && (
+          <ThemedText type="caption" themeColor="textSecondary">
+            {value}
+          </ThemedText>
+        )}
+      </View>
       <SymbolView
         name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
         size={16}
