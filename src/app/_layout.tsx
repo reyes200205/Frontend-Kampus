@@ -12,6 +12,9 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ActiveTheme, ActiveThemeMode, Themes } from '@/constants/theme';
+// Registra el cierre de sesión cuando la API rechaza el token (401).
+import '@/hooks/end-session';
+import { restoreSession, useSessionRestored } from '@/hooks/use-session';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -38,12 +41,21 @@ export default function RootLayout() {
     Sora_700Bold,
   });
 
-  // El splash sigue visible hasta que las fuentes estén listas
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+  const sessionRestored = useSessionRestored();
 
-  if (!fontsLoaded) return null;
+  // Si había una sesión guardada, se valida con `GET /api/user` antes de decidir a dónde ir: así una
+  // recarga no manda al inicio de sesión a quien ya lo había hecho.
+  useEffect(() => {
+    void restoreSession();
+  }, []);
+
+  // El splash sigue visible hasta que las fuentes y la sesión estén listas.
+  const ready = fontsLoaded && sessionRestored;
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
 
   return (
     // Necesario para los gestos de swipe en Descubrir (react-native-gesture-handler).

@@ -4,9 +4,22 @@
  * La URL base sale de `EXPO_PUBLIC_API_URL` (ver `.env.example`).
  */
 
-import { getToken } from "@/hooks/use-session";
-
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api";
+
+/**
+ * De dónde sale el token y qué hacer si la API lo rechaza (401). Los registra la sesión
+ * (`hooks/use-session` y `hooks/end-session`) para que este cliente no dependa de ella.
+ */
+let getToken: () => string | null = () => null;
+let onUnauthorized: (() => void) | null = null;
+
+export function setTokenProvider(provider: () => string | null) {
+  getToken = provider;
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
 
 /** Error de la API con el mensaje y, en un 422, los errores por campo que manda Laravel. */
 export class ApiError extends Error {
@@ -55,6 +68,9 @@ export async function apiRequest<T>(
   }
 
   const data = response.status === 204 ? null : await response.json().catch(() => null);
+
+  // El token venció o se revocó (p. ej. se cerró esa sesión desde otro dispositivo): fin de la sesión.
+  if (response.status === 401 && token) onUnauthorized?.();
 
   if (!response.ok) {
     throw new ApiError(

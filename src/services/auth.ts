@@ -1,13 +1,14 @@
 /** Registro, sesión, verificación de correo y recuperación de contraseña (T-06 y T-45, RF-01 y RF-02). */
 
 import { apiRequest } from "@/services/api";
-import type { MessageResponse } from "@/types/api";
+import type { ApiResource, MessageResponse } from "@/types/api";
 import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
+  User,
   VerifyEmailParams,
 } from "@/types/auth";
 
@@ -21,6 +22,11 @@ export function login(body: LoginRequest) {
 
 export function logout() {
   return apiRequest<null>("/logout", { method: "POST" });
+}
+
+/** Usuario dueño del token; sirve para validar una sesión guardada al abrir la app. */
+export function getCurrentUser() {
+  return apiRequest<ApiResource<User>>("/user").then((res) => res.data);
 }
 
 /** Confirma el correo con los parámetros del enlace que manda el backend (RF-01). */

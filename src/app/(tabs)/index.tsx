@@ -40,8 +40,10 @@ const FiltersPanelWidth = 320;
  * Alto que ocupan encabezado, selector, botones y barra de pestañas alrededor de la tarjeta, para
  * que los botones queden a la vista sin hacer scroll. En nativo la barra de pestañas va encima.
  */
-const ReservedHeight = Platform.OS === "web" ? 350 : 290 + BottomTabInset;
-const MinCardHeight = 300;
+const ReservedHeight = Platform.OS === "web" ? 342 : 282 + BottomTabInset;
+const MinCardHeight = 320;
+/** Proporción máxima alto/ancho de la tarjeta: más alta que ancha para que la foto luzca (T-31). */
+const MaxCardRatio = 1.6;
 
 export default function DiscoverScreen() {
   const [mode, setMode] = useState<DiscoverMode>("for-you");
@@ -214,7 +216,7 @@ function DeckArea({ discovery, onAdjustFilters }: { discovery: Discovery; onAdju
   );
   const cardHeight = Math.max(
     MinCardHeight,
-    Math.min(cardWidth * 1.5, windowHeight - ReservedHeight - insets.top - insets.bottom),
+    Math.min(cardWidth * MaxCardRatio, windowHeight - ReservedHeight - insets.top - insets.bottom),
   );
 
   if (discovery.status === "loading") {

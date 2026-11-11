@@ -19,14 +19,10 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
-import { clearLocation, loadLocation, useLocation } from "@/hooks/use-location";
-import { clearChats } from "@/hooks/use-chat";
-import { clearMatches } from "@/hooks/use-matches";
-import { clearProfile, loadProfile, useProfile } from "@/hooks/use-profile";
-import { signOut } from "@/hooks/use-session";
+import { endSession } from "@/hooks/end-session";
+import { loadLocation, useLocation } from "@/hooks/use-location";
+import { loadProfile, useProfile } from "@/hooks/use-profile";
 import { useTheme } from "@/hooks/use-theme";
-import { logout } from "@/services/auth";
-import { disconnectRealtime } from "@/services/realtime";
 
 /**
  * Perfil del estudiante (T-08, RF-03): portada con las fotos y, encima, la hoja con nombre, datos,
@@ -48,13 +44,7 @@ export default function ProfileScreen() {
 
   async function handleSignOut() {
     // Revoca el token en el backend; si falla (sin red, token vencido) igual se cierra la sesión local.
-    await logout().catch(() => undefined);
-    clearProfile();
-    clearLocation();
-    clearMatches();
-    clearChats();
-    disconnectRealtime();
-    signOut();
+    await endSession({ revoke: true });
     router.replace("/auth/login");
   }
 

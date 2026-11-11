@@ -1,4 +1,4 @@
-import { Link, router } from "expo-router";
+import { Link, Redirect, router } from "expo-router";
 import { useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
@@ -7,19 +7,21 @@ import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { Spacing } from "@/constants/theme";
-import { signIn } from "@/hooks/use-session";
+import { signIn, useSession } from "@/hooks/use-session";
 import { ApiError } from "@/services/api";
 import { login } from "@/services/auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { isSignedIn } = useSession();
+
+  // Con una sesión ya activa (p. ej. recargó en /auth/login) no tiene caso pedirla otra vez.
+  if (isSignedIn && !loading) return <Redirect href="/" />;
 
   async function handleLogin() {
     if (!email.trim() || !password) {
@@ -30,8 +32,9 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const { token, user } = await login({ email, password, device_name: Platform.OS });
-      signIn(token, user);
+      const { token, user, expires_at } = await login({ email, password, device_name: Platform.OS });
+      // La sesión se conserva mientras el token siga vigente (7 días en el backend), como en una red social.
+      signIn(token, user, expires_at);
       router.replace("/");
     } catch (e) {
       // 422: credenciales incorrectas o bloqueo; 403: correo sin verificar. El backend ya manda el texto.
@@ -72,7 +75,6 @@ export default function LoginScreen() {
         />
 
         <View style={styles.options}>
-          <Checkbox label="Recordarme" value={remember} onValueChange={setRemember} />
           <Link href="/auth/forgot-password">
             <ThemedText type="link">¿Olvidaste tu contraseña?</ThemedText>
           </Link>
@@ -108,10 +110,8 @@ const styles = StyleSheet.create({
   },
   options: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
-    columnGap: Spacing.three,
   },
   error: {
     textAlign: "center",

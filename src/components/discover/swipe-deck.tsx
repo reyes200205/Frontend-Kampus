@@ -1,11 +1,14 @@
-import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { useEffect, useRef } from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 
+import { ActionButton } from "@/components/discover/action-button";
+import { ExpandedProfile } from "@/components/discover/expanded-profile";
 import { SwipeCard, type SwipeCardHandle } from "@/components/discover/swipe-card";
-import { useTheme } from "@/hooks/use-theme";
-import { Radius, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import type { DiscoveryCard } from "@/types/discovery";
+
+/** Tiempo para que el perfil expandido termine de cerrarse antes de lanzar la tarjeta. */
+const CloseBeforeFlingMs = 280;
 
 export type SwipeDeckProps = {
   cards: DiscoveryCard[];
@@ -16,18 +19,26 @@ export type SwipeDeckProps = {
 
 /**
  * Mazo con la tarjeta de arriba y la siguiente asomándose, más los botones "Pasar" y "Me interesa".
+ * Tocar la tarjeta o deslizarla hacia arriba abre el perfil completo (T-31).
  * En web también responde a las flechas ← y → del teclado.
  */
 export function SwipeDeck({ cards, width, height, onDecide }: SwipeDeckProps) {
   const top = useRef<SwipeCardHandle>(null);
   // Evita lanzar dos veces la misma tarjeta con un doble toque mientras sale.
   const flinging = useRef<number | null>(null);
+  const [expanded, setExpanded] = useState<DiscoveryCard | null>(null);
   const topId = cards[0]?.id;
 
   function fling(liked: boolean) {
     if (topId === undefined || flinging.current === topId) return;
     flinging.current = topId;
     top.current?.fling(liked);
+  }
+
+  /** Decidir desde el perfil expandido: primero se cierra y luego sale la tarjeta, para que se vea. */
+  function decideFromProfile(liked: boolean) {
+    setExpanded(null);
+    setTimeout(() => fling(liked), CloseBeforeFlingMs);
   }
 
   // Nueva tarjeta arriba (o la misma de vuelta tras un error): ya se puede lanzar.
@@ -40,8 +51,9 @@ export function SwipeDeck({ cards, width, height, onDecide }: SwipeDeckProps) {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       if (target?.closest("input, textarea, [contenteditable]")) return;
-      if (event.key === "ArrowRight") fling(true);
-      if (event.key === "ArrowLeft") fling(false);
+      if (event.key === "ArrowRight") (expanded ? decideFromProfile : fling)(true);
+      if (event.key === "ArrowLeft") (expanded ? decideFromProfile : fling)(false);
+      if (event.key === "ArrowUp" && !expanded && cards[0]) setExpanded(cards[0]);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -62,6 +74,7 @@ export function SwipeDeck({ cards, width, height, onDecide }: SwipeDeckProps) {
             height={height}
             isTop={card.id === topId}
             onDecide={onDecide}
+            onExpand={setExpanded}
           />
         ))}
       </View>
@@ -79,61 +92,25 @@ export function SwipeDeck({ cards, width, height, onDecide }: SwipeDeckProps) {
           onPress={() => fling(true)}
         />
       </View>
+
+      <ExpandedProfile
+        card={expanded}
+        onClose={() => setExpanded(null)}
+        onDecide={decideFromProfile}
+      />
     </View>
-  );
-}
-
-function ActionButton({
-  label,
-  icon,
-  primary,
-  onPress,
-}: {
-  label: string;
-  icon: SymbolViewProps["name"];
-  primary?: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  const size = primary ? 68 : 60;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [
-        styles.action,
-        { width: size, height: size },
-        primary
-          ? { backgroundColor: theme.accent }
-          : { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderWidth: 1.5 },
-        pressed && styles.pressed,
-      ]}
-    >
-      <SymbolView name={icon} size={primary ? 30 : 26} tintColor={primary ? theme.onAccent : theme.text} />
-    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.six - Spacing.two,
-  },
-  action: {
-    borderRadius: Radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.94 }],
   },
 });
