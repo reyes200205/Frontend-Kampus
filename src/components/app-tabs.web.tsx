@@ -7,6 +7,8 @@ import { KampusLogo } from '@/components/kampus-logo';
 import { TabItems } from '@/constants/navigation';
 import { FontFamily, MinTouchSize, Radius, SidebarWidth, Spacing } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useUnreadChatsCount } from '@/hooks/use-chat';
+import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -16,6 +18,9 @@ import { useTheme } from '@/hooks/use-theme';
 export default function AppTabs() {
   const theme = useTheme();
   const { isDesktop } = useBreakpoint();
+  const { user } = useSession();
+  // Conversaciones con mensajes sin leer (T-16): se muestra en la pestaña Chats.
+  const unread = useUnreadChatsCount(user?.id ?? 0);
 
   return (
     <Tabs style={[styles.root, isDesktop && styles.rootDesktop, { backgroundColor: theme.background }]}>
@@ -33,7 +38,12 @@ export default function AppTabs() {
         )}
         {TabItems.map((item) => (
           <TabTrigger key={item.name} name={item.name} href={item.href} asChild>
-            <TabButton icon={item.md} label={item.label} desktop={isDesktop} />
+            <TabButton
+              icon={item.md}
+              label={item.label}
+              desktop={isDesktop}
+              badge={item.name === 'chats' ? unread : 0}
+            />
           </TabTrigger>
         ))}
       </TabList>
@@ -45,14 +55,17 @@ type TabButtonProps = TabTriggerSlotProps & {
   icon: AndroidSymbol;
   label: string;
   desktop: boolean;
+  /** Número del contador (p. ej. chats sin leer); con 0 no se muestra. */
+  badge: number;
 };
 
 const TabButton = forwardRef<PressableInstance, TabButtonProps>(function TabButton(
-  { icon, label, desktop, isFocused, ...props },
+  { icon, label, desktop, badge, isFocused, ...props },
   ref
 ) {
   const theme = useTheme();
   const color = isFocused ? theme.accent : theme.textSecondary;
+  const badgeText = badge > 9 ? '9+' : String(badge);
 
   return (
     <Pressable
@@ -60,13 +73,20 @@ const TabButton = forwardRef<PressableInstance, TabButtonProps>(function TabButt
       {...props}
       accessibilityRole="tab"
       accessibilityState={{ selected: !!isFocused }}
-      accessibilityLabel={label}
+      accessibilityLabel={badge > 0 ? `${label}, ${badgeText} sin leer` : label}
       style={({ pressed }) => [
         desktop ? styles.sidebarItem : styles.bottomItem,
         desktop && isFocused && { backgroundColor: theme.backgroundSelected },
         pressed && styles.pressed,
       ]}>
-      <SymbolView name={{ web: icon }} size={desktop ? 22 : 24} tintColor={color} />
+      <View>
+        <SymbolView name={{ web: icon }} size={desktop ? 22 : 24} tintColor={color} />
+        {badge > 0 && (
+          <View style={[styles.badge, { backgroundColor: theme.accent, borderColor: theme.backgroundElement }]}>
+            <Text style={[styles.badgeText, { color: theme.onAccent }]}>{badgeText}</Text>
+          </View>
+        )}
+      </View>
       <Text
         style={[
           desktop ? styles.sidebarLabel : styles.bottomLabel,
@@ -134,6 +154,23 @@ const styles = StyleSheet.create({
   },
   labelFocused: {
     fontFamily: FontFamily.semibold,
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: Radius.full,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 10,
+    lineHeight: 12,
+    fontFamily: FontFamily.bold,
   },
   pressed: {
     opacity: 0.7,

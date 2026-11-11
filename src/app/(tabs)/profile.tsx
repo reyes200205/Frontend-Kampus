@@ -20,11 +20,13 @@ import {
 } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { clearLocation, loadLocation, useLocation } from "@/hooks/use-location";
+import { clearChats } from "@/hooks/use-chat";
 import { clearMatches } from "@/hooks/use-matches";
 import { clearProfile, loadProfile, useProfile } from "@/hooks/use-profile";
 import { signOut } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
 import { logout } from "@/services/auth";
+import { disconnectRealtime } from "@/services/realtime";
 
 /**
  * Perfil del estudiante (T-08, RF-03): portada con las fotos y, encima, la hoja con nombre, datos,
@@ -50,6 +52,8 @@ export default function ProfileScreen() {
     clearProfile();
     clearLocation();
     clearMatches();
+    clearChats();
+    disconnectRealtime();
     signOut();
     router.replace("/auth/login");
   }

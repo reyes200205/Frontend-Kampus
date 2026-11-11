@@ -56,6 +56,7 @@ export default function RootLayout() {
           <Stack.Screen name="auth/verify-email/index" />
           <Stack.Screen name="profile/edit" />
           <Stack.Screen name="profile/location" />
+          <Stack.Screen name="chat/[matchId]" />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
           <Stack.Screen name="legal/privacy" options={{ presentation: 'modal' }} />
           <Stack.Screen name="legal/guidelines" options={{ presentation: 'modal' }} />
