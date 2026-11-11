@@ -50,7 +50,8 @@
         {
           "locationWhenInUsePermission": "Kampus usa tu ubicación solo para calcular una zona aproximada de 1 km en Cerca de ti. Tu ubicación exacta nunca sale de tu celular."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

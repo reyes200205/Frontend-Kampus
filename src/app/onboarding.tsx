@@ -22,11 +22,11 @@ import {
   validateBirthdate,
 } from "@/constants/profile";
 import { MaxFormWidth, MinTouchSize, Radius, Spacing } from "@/constants/theme";
-import { clearProfile, loadProfile, setProfile, useProfile } from "@/hooks/use-profile";
-import { signOut, updateSessionUser, useSession } from "@/hooks/use-session";
+import { endSession } from "@/hooks/end-session";
+import { loadProfile, setProfile, useProfile } from "@/hooks/use-profile";
+import { updateSessionUser, useSession } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
-import { logout } from "@/services/auth";
 import { getInterests, updateInterests, updateProfile } from "@/services/profile";
 import type { Gender, Interest, Profile, ProfileStep } from "@/types/profile";
 
@@ -186,9 +186,7 @@ export default function OnboardingScreen() {
   }
 
   async function handleSignOut() {
-    await logout().catch(() => undefined);
-    clearProfile();
-    signOut();
+    await endSession({ revoke: true });
     router.replace("/auth/login");
   }
 
