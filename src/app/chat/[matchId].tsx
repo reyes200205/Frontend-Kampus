@@ -51,8 +51,8 @@ function sameDay(a: string | null, b: string | null) {
 }
 
 /**
- * Conversación con un match (T-16, RF-08): historial paginado, envío al instante con reintento y
- * mensajes nuevos en tiempo real por el canal privado `chat.{matchId}` (T-13 y T-14).
+ * Conversación con un match (T-16, RF-08): historial paginado, envío al instante con reintento,
+ * imágenes (T-15) y mensajes nuevos en tiempo real por el canal privado `chat.{matchId}` (T-13 y T-14).
  */
 export default function ChatScreen() {
   const theme = useTheme();
@@ -226,7 +226,7 @@ export default function ChatScreen() {
           <View style={styles.composer}>
             <ChatComposer
               disabled={status !== "ready" || !user}
-              onSend={(body) => sendChatMessage(matchId, myId, body)}
+              onSend={(body, image) => sendChatMessage(matchId, myId, body, image)}
             />
           </View>
         )}
