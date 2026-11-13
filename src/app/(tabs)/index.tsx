@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { FiltersPanel, countActiveFilters } from "@/components/discover/filters-panel";
 import { SwipeDeck } from "@/components/discover/swipe-deck";
+import { KampusMap } from "@/components/map/kampus-map";
 import { MatchModal } from "@/components/matches/match-modal";
 import { Screen } from "@/components/layout/screen";
 import { ThemedText } from "@/components/themed-text";
@@ -42,6 +43,7 @@ const FiltersPanelWidth = 320;
  */
 const ReservedHeight = Platform.OS === "web" ? 342 : 282 + BottomTabInset;
 const MinCardHeight = 320;
+const MinMapHeight = 360;
 /** Proporción máxima alto/ancho de la tarjeta: más alta que ancha para que la foto luzca (T-31). */
 const MaxCardRatio = 1.6;
 
@@ -157,6 +159,9 @@ type Discovery = ReturnType<typeof useDiscovery>;
 function NearbyArea() {
   const theme = useTheme();
   const { location, loading, error } = useLocation();
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const mapHeight = Math.max(MinMapHeight, windowHeight - ReservedHeight - insets.top - insets.bottom);
 
   // Al volver de activarlo (o de apagarlo) en el perfil, el estado se actualiza.
   useFocusEffect(
@@ -194,13 +199,39 @@ function NearbyArea() {
     );
   }
 
-  // TODO (T-30): mapa por zonas en "Cerca".
+  const zone = location.zone;
+  if (!zone) {
+    return (
+      <EmptyState
+        icon={{ ios: "mappin.slash", android: "wrong_location", web: "wrong_location" }}
+        title="Elige tu zona"
+        message="Para mostrarte el mapa, primero elige tu campus o colonia."
+        action={{ title: "Elegir zona", onPress: () => router.push("/profile/location") }}
+      />
+    );
+  }
+
+  // TODO (T-30): avatares por zona con ficha rápida y distancia aproximada. Por ahora solo se marca
+  // el centro público de tu zona, nunca la ubicación de una persona (RNF-11).
   return (
-    <EmptyState
-      icon={{ ios: "map", android: "map", web: "map" }}
-      title="Gente cerca de ti"
-      message="Ya compartes tu zona. Muy pronto verás aquí en un mapa a quienes estudian cerca, sin mostrar nunca su ubicación exacta."
-    />
+    <View style={styles.nearby}>
+      <KampusMap
+        center={zone.center}
+        markers={[{ id: `zone-${zone.id}`, coordinate: zone.center, label: zone.name }]}
+        accessibilityLabel={`Mapa de tu zona, ${zone.name}`}
+        style={[styles.map, { height: mapHeight, borderColor: theme.border }]}
+      />
+      <View style={[styles.mapNotice, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <SymbolView
+          name={{ ios: "lock.fill", android: "lock", web: "lock" }}
+          size={16}
+          tintColor={theme.textSecondary}
+        />
+        <ThemedText type="caption" themeColor="textSecondary" style={styles.flex}>
+          Solo mostramos zonas aproximadas, nunca la ubicación exacta de nadie.
+        </ThemedText>
+      </View>
+    </View>
   );
 }
 
@@ -398,6 +429,23 @@ const styles = StyleSheet.create({
   nearbyLoading: {
     flexGrow: 1,
     paddingVertical: Spacing.six,
+  },
+  nearby: {
+    gap: Spacing.three,
+  },
+  map: {
+    borderRadius: Radius.large,
+    borderWidth: 1,
+  },
+  mapNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.full,
+    borderWidth: 1,
   },
   notice: {
     flexDirection: "row",
