@@ -207,6 +207,23 @@ export default function ChatScreen() {
               </ThemedText>
             )}
           </View>
+          {!unavailable && (
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/call/[matchId]", params: { matchId: String(matchId) } })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Videollamada con ${firstName}`}
+              hitSlop={Spacing.two}
+              style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+            >
+              <SymbolView
+                name={{ ios: "video.fill", android: "videocam", web: "videocam" }}
+                size={24}
+                tintColor={theme.accent}
+              />
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.body}>{content}</View>

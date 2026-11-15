@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { IncomingCall } from '@/components/call/incoming-call';
 import { ActiveTheme, ActiveThemeMode, Themes } from '@/constants/theme';
 // Registra el cierre de sesión cuando la API rechaza el token (401).
 import '@/hooks/end-session';
@@ -69,10 +70,13 @@ export default function RootLayout() {
           <Stack.Screen name="profile/edit" />
           <Stack.Screen name="profile/location" />
           <Stack.Screen name="chat/[matchId]" />
+          <Stack.Screen name="call/[matchId]" options={{ gestureEnabled: false, animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
           <Stack.Screen name="legal/privacy" options={{ presentation: 'modal' }} />
           <Stack.Screen name="legal/guidelines" options={{ presentation: 'modal' }} />
         </Stack>
+        {/* Videollamada entrante (T-20): encima de cualquier pantalla. */}
+        <IncomingCall />
       </ThemeProvider>
     </GestureHandlerRootView>
   );
