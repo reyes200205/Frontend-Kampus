@@ -105,15 +105,27 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
     firstNameRef.current = firstName;
   }, [firstName, phase]);
 
-  /** Suelta la sala, la cámara y el micrófono. */
+  /**
+   * Suelta la sala, la cámara y el micrófono para que el navegador deje de mostrarlos en uso.
+   * Hay que `detach()` antes de `stop()`: LiveKit deja escuchando `visibilitychange` mientras la pista esté
+   * en un `<video>`, y en el celular, al volver a la pestaña, vuelve a pedir la cámara de una pista detenida.
+   */
   const release = useCallback(() => {
     attemptRef.current += 1;
     const room = roomRef.current;
     roomRef.current = null;
     room?.removeAllListeners();
-    void room?.disconnect();
-    tracksRef.current.forEach((track) => track.stop());
+    void room?.disconnect(true);
+    tracksRef.current.forEach((track) => {
+      track.detach();
+      track.stop();
+      // Por si LiveKit cambió la pista por dentro (p. ej. al voltear la cámara).
+      track.mediaStreamTrack?.stop();
+    });
     tracksRef.current = [];
+    for (const element of [localVideoRef.current, remoteVideoRef.current]) {
+      if (element) element.srcObject = null;
+    }
     audioBoxRef.current?.replaceChildren();
   }, []);
 
@@ -129,6 +141,8 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
   );
 
   const begin = useCallback(async () => {
+    // Un intento anterior (p. ej. «Reintentar») no puede dejar la cámara encendida.
+    release();
     const attempt = ++attemptRef.current;
     const stale = () => attemptRef.current !== attempt;
     closedRef.current = false;
@@ -162,7 +176,10 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
       return;
     }
     if (stale()) {
-      tracks.forEach((track) => track.stop());
+      tracks.forEach((track) => {
+        track.detach();
+        track.stop();
+      });
       return;
     }
     tracksRef.current = tracks;
