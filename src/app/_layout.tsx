@@ -15,6 +15,7 @@ import { IncomingCall } from '@/components/call/incoming-call';
 import { ActiveTheme, ActiveThemeMode, Themes } from '@/constants/theme';
 // Registra el cierre de sesión cuando la API rechaza el token (401).
 import '@/hooks/end-session';
+import { loadChatStyle } from '@/hooks/use-chat-style';
 import { restoreSession, useSessionRestored } from '@/hooks/use-session';
 
 SplashScreen.preventAutoHideAsync();
@@ -48,6 +49,8 @@ export default function RootLayout() {
   // recarga no manda al inicio de sesión a quien ya lo había hecho.
   useEffect(() => {
     void restoreSession();
+    // Preferencia local; no bloquea el splash (si tarda, el chat arranca con el estilo predeterminado).
+    void loadChatStyle();
   }, []);
 
   // El splash sigue visible hasta que las fuentes y la sesión estén listas.
@@ -69,6 +72,8 @@ export default function RootLayout() {
           <Stack.Screen name="auth/verify-email/index" />
           <Stack.Screen name="profile/edit" />
           <Stack.Screen name="profile/location" />
+          <Stack.Screen name="profile/appearance" />
+          <Stack.Screen name="profile/chat-style" />
           <Stack.Screen name="chat/[matchId]" />
           <Stack.Screen name="call/[matchId]" options={{ gestureEnabled: false, animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />

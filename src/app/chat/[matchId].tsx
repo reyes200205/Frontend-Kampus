@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, KeyboardAvoidingView, Pressable, StyleShee
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatComposer } from "@/components/chat/chat-composer";
+import { ChatWallpaper } from "@/components/chat/chat-wallpaper";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { Avatar } from "@/components/matches/avatar";
 import { ThemedText } from "@/components/themed-text";
@@ -20,6 +21,7 @@ import {
   useConversation,
 } from "@/hooks/use-chat";
 import { loadMatches, useMatches } from "@/hooks/use-matches";
+import { useChatStyle } from "@/hooks/use-chat-style";
 import { useSession } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
 import { isRealtimeEnabled, listenToChat } from "@/services/realtime";
@@ -63,6 +65,7 @@ export default function ChatScreen() {
   const { matches, status: matchesStatus } = useMatches();
   const match = matches.find((item) => item.id === matchId) ?? null;
   const conversation = useConversation(matchId);
+  const chatStyle = useChatStyle();
   const { messages, status, error, errorStatus, hasMore, loadingMore } = conversation;
 
   // Si se abre directo (recarga en web), primero hay que traer el match para el encabezado.
@@ -110,7 +113,11 @@ export default function ChatScreen() {
     return (
       <View style={styles.item}>
         {showDay && (
-          <ThemedText type="caption" themeColor="textSecondary" style={styles.day}>
+          <ThemedText
+            type="caption"
+            themeColor="textSecondary"
+            style={[styles.day, { backgroundColor: theme.backgroundElement }]}
+          >
             {dayLabel(item.created_at)}
           </ThemedText>
         )}
@@ -244,18 +251,22 @@ export default function ChatScreen() {
           )}
         </View>
 
-        <View style={styles.body}>{content}</View>
+        {/* Fondo elegido en Perfil → Apariencia, de lado a lado aunque los mensajes tengan ancho máximo. */}
+        <View style={styles.flex}>
+          <ChatWallpaper id={chatStyle.wallpaper} />
+          <View style={styles.body}>{content}</View>
 
-        {error && status === "ready" && (
-          <ThemedText
-            type="caption"
-            themeColor="danger"
-            accessibilityRole="alert"
-            style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
-          >
-            {error}
-          </ThemedText>
-        )}
+          {error && status === "ready" && (
+            <ThemedText
+              type="caption"
+              themeColor="danger"
+              accessibilityRole="alert"
+              style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
+            >
+              {error}
+            </ThemedText>
+          )}
+        </View>
 
         {!unavailable && (
           <View style={styles.composer}>
@@ -329,7 +340,12 @@ const styles = StyleSheet.create({
   },
   day: {
     alignSelf: "center",
-    paddingVertical: Spacing.two,
+    // Pastilla con fondo para que se lea sobre cualquier fondo del chat.
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    marginVertical: Spacing.one,
+    borderRadius: Radius.full,
+    overflow: "hidden",
     textTransform: "capitalize",
   },
   older: {
