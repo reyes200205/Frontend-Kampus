@@ -11,12 +11,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useTheme } from "@/hooks/use-theme";
 import { endCall } from "@/services/video-call";
+import type { CallType } from "@/types/call";
 import type { Match } from "@/types/discovery";
 
 export type CallViewProps = {
   matchId: number;
   /** `start` para llamar; `answer` para contestar una llamada entrante. */
   mode: "start" | "answer";
+  /** `video` para videollamada; `audio` para llamada de voz. */
+  type: CallType;
   /** La otra persona del match, si ya se conoce. */
   peer: Match["user"] | null;
   /** Cierra la pantalla de llamada. */
@@ -34,8 +37,8 @@ export function CallView({ matchId, mode, onClose }: CallViewProps) {
     <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
       <EmptyState
         icon={{ ios: "video.slash.fill", android: "videocam_off", web: "videocam_off" }}
-        title="Videollamada desde el navegador"
-        message="Por ahora las videollamadas funcionan en la versión web de Kampus: ábrela en Chrome o Safari para llamar y contestar."
+        title="Llamadas desde el navegador"
+        message="Por ahora las llamadas y videollamadas funcionan en la versión web de Kampus: ábrela en Chrome o Safari para llamar y contestar."
         action={{ title: "Volver al chat", onPress: onClose }}
       />
     </SafeAreaView>

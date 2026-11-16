@@ -1,6 +1,6 @@
 /**
- * Videollamada 1 a 1 en el navegador con el SDK de LiveKit (`livekit-client`) (T-20, RF-10).
- * Funciona en Chrome (escritorio y Android) y Safari de iOS.
+ * Videollamada o llamada de voz 1 a 1 en el navegador con el SDK de LiveKit (`livekit-client`) (T-20, RF-10).
+ * Funciona en Chrome (escritorio y Android) y Safari de iOS. La llamada de voz solo pide y publica el micrófono.
  *
  * 1. Primero se piden la cámara y el micrófono; si el navegador los bloquea se muestra la guía de permisos y
  *    a la otra persona no le llega nada.
@@ -53,15 +53,14 @@ function browserKind(): BrowserKind {
 }
 
 /** Estado de los permisos sin pedirlos. `unknown` si el navegador no deja consultarlo. */
-async function permissionState(): Promise<"granted" | "denied" | "unknown"> {
+async function permissionState(audioOnly: boolean): Promise<"granted" | "denied" | "unknown"> {
   try {
-    const [camera, mic] = await Promise.all(
-      (["camera", "microphone"] as const).map((name) =>
-        navigator.permissions.query({ name: name as PermissionName }),
-      ),
+    const names = audioOnly ? ["microphone"] : ["camera", "microphone"];
+    const states = await Promise.all(
+      names.map((name) => navigator.permissions.query({ name: name as PermissionName })),
     );
-    if (camera.state === "granted" && mic.state === "granted") return "granted";
-    if (camera.state === "denied" || mic.state === "denied") return "denied";
+    if (states.every((status) => status.state === "granted")) return "granted";
+    if (states.some((status) => status.state === "denied")) return "denied";
   } catch {
     // Firefox no deja consultar la cámara y Safari antiguo no tiene `navigator.permissions`.
   }
@@ -75,8 +74,10 @@ function formatDuration(ms: number) {
   return `${minutes}:${seconds}`;
 }
 
-export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
+export function CallView({ matchId, mode, type, peer, onClose }: CallViewProps) {
   const theme = useTheme();
+  const audioOnly = type === "audio";
+  const callName = audioOnly ? "Llamada de voz" : "Videollamada";
   const firstName = peer?.name.split(" ")[0] ?? "Tu match";
   const [phase, setPhase] = useState<Phase>({ name: "checking" });
   const [micOn, setMicOn] = useState(true);
@@ -161,7 +162,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
     try {
       tracks = await lk.createLocalTracks({
         audio: { echoCancellation: true, noiseSuppression: true },
-        video: { facingMode: "user", resolution: lk.VideoPresets.h540.resolution },
+        video: audioOnly ? false : { facingMode: "user", resolution: lk.VideoPresets.h540.resolution },
       });
     } catch (error) {
       if (stale()) return;
@@ -191,7 +192,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
     setPhase({ name: "connecting" });
     let access;
     try {
-      access = mode === "answer" ? await getCallToken(matchId) : await startCall(matchId);
+      access = mode === "answer" ? await getCallToken(matchId) : await startCall(matchId, type);
     } catch (error) {
       if (stale()) return;
       release();
@@ -201,7 +202,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
       setPhase({
         name: "ended",
         title: unavailable
-          ? "La videollamada no está disponible"
+          ? `La ${audioOnly ? "llamada" : "videollamada"} no está disponible`
           : gone
             ? "Ya no puedes llamar a esta persona"
             : "No pudimos iniciar la llamada",
@@ -269,12 +270,12 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
 
     setNeedsAudioTap(!room.canPlaybackAudio);
     setPhase(room.remoteParticipants.size > 0 ? { name: "active", since: Date.now() } : { name: "ringing" });
-  }, [finish, matchId, mode, release]);
+  }, [audioOnly, finish, matchId, mode, release, type]);
 
   // Al abrir: si los permisos ya estaban dados, la llamada empieza sola; si no, primero se explica.
   useEffect(() => {
     let cancelled = false;
-    void permissionState().then((state) => {
+    void permissionState(audioOnly).then((state) => {
       if (cancelled) return;
       setBrowser(browserKind());
       if (state === "granted") void begin();
@@ -284,7 +285,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [begin]);
+  }, [audioOnly, begin]);
 
   // Mientras la pantalla está abierta se rechazan otras llamadas; al salir se cuelga.
   useEffect(() => {
@@ -386,7 +387,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
   if (phase.name === "blocked") {
     return (
       <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
-        <PermissionGuide problem={phase.problem} browser={browser} onRetry={() => void begin()} onCancel={cancel} />
+        <PermissionGuide problem={phase.problem} browser={browser} audioOnly={audioOnly} onRetry={() => void begin()} onCancel={cancel} />
       </SafeAreaView>
     );
   }
@@ -397,7 +398,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
         <EmptyState
           icon={{ ios: "phone.down.fill", android: "call_end", web: "call_end" }}
           title={phase.title}
-          message={phase.message || "La videollamada terminó."}
+          message={phase.message || `La ${audioOnly ? "llamada" : "videollamada"} terminó.`}
           action={{ title: "Volver al chat", onPress: onClose }}
         />
       </SafeAreaView>
@@ -410,18 +411,23 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
         <View style={styles.intro}>
           {peer && <Avatar uri={peer.photo_url} name={peer.name} size={96} ring />}
           <ThemedText type="heading" style={styles.centerText}>
-            {mode === "answer" ? `Contestar a ${firstName}` : `Videollamada con ${firstName}`}
+            {mode === "answer" ? `Contestar a ${firstName}` : `${callName} con ${firstName}`}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
-            Para la videollamada, Kampus necesita tu cámara y tu micrófono. Tu navegador te va a pedir permiso:
-            elige «Permitir». Solo se usan durante la llamada.
+            {audioOnly
+              ? "Para la llamada de voz, Kampus necesita tu micrófono. Tu navegador te va a pedir permiso: elige «Permitir». Solo se usa durante la llamada."
+              : "Para la videollamada, Kampus necesita tu cámara y tu micrófono. Tu navegador te va a pedir permiso: elige «Permitir». Solo se usan durante la llamada."}
           </ThemedText>
           {phase.name === "checking" ? (
             <ActivityIndicator color={theme.accent} />
           ) : (
             <Button
               title={mode === "answer" ? "Permitir y contestar" : "Permitir y llamar"}
-              icon={{ ios: "video.fill", android: "videocam", web: "videocam" }}
+              icon={
+                audioOnly
+                  ? { ios: "phone.fill", android: "call", web: "call" }
+                  : { ios: "video.fill", android: "videocam", web: "videocam" }
+              }
               loading={phase.name === "requesting"}
               onPress={() => void begin()}
             />
@@ -440,7 +446,7 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
         : formatDuration(now - phase.since);
 
   return (
-    <View style={[styles.flex, styles.stage]}>
+    <View style={[styles.flex, styles.stage, audioOnly && { backgroundColor: theme.background }]}>
       {/* Video de la otra persona: llena la pantalla. Su audio va aparte en `audioBox`. */}
       <video ref={remoteVideoRef} autoPlay playsInline muted style={{ ...videoFill, opacity: remoteVideo ? 1 : 0 }} />
       <div ref={audioBoxRef} style={{ display: "none" }} />
@@ -454,15 +460,15 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         <View style={styles.top} pointerEvents="none">
           <ThemedText type="subtitle" style={styles.light} numberOfLines={1}>
-            {peer?.name ?? "Videollamada"}
+            {peer?.name ?? callName}
           </ThemedText>
           <ThemedText type="small" style={styles.lightSoft} accessibilityLiveRegion="polite">
             {status}
           </ThemedText>
         </View>
 
-        {/* Tu cámara, en una esquina. La frontal se ve como espejo. */}
-        <View style={[styles.selfView, { borderColor: theme.border }]}>
+        {/* Tu cámara, en una esquina. La frontal se ve como espejo. En la llamada de voz no se muestra. */}
+        <View style={[styles.selfView, { borderColor: theme.border }, audioOnly && styles.hidden]}>
           <video
             ref={localVideoRef}
             autoPlay
@@ -493,18 +499,20 @@ export function CallView({ matchId, mode, peer, onClose }: CallViewProps) {
               disabled={!inCall}
               onPress={() => void toggleMic()}
             />
-            <ControlButton
-              label={camOn ? "Apagar cámara" : "Encender cámara"}
-              icon={
-                camOn
-                  ? { ios: "video.fill", android: "videocam", web: "videocam" }
-                  : { ios: "video.slash.fill", android: "videocam_off", web: "videocam_off" }
-              }
-              active={!camOn}
-              disabled={!inCall}
-              onPress={() => void toggleCamera()}
-            />
-            {isMobile && (
+            {!audioOnly && (
+              <ControlButton
+                label={camOn ? "Apagar cámara" : "Encender cámara"}
+                icon={
+                  camOn
+                    ? { ios: "video.fill", android: "videocam", web: "videocam" }
+                    : { ios: "video.slash.fill", android: "videocam_off", web: "videocam_off" }
+                }
+                active={!camOn}
+                disabled={!inCall}
+                onPress={() => void toggleCamera()}
+              />
+            )}
+            {isMobile && !audioOnly && (
               <ControlButton
                 label="Cambiar de cámara"
                 icon={{ ios: "arrow.triangle.2.circlepath.camera.fill", android: "cameraswitch", web: "cameraswitch" }}
@@ -581,6 +589,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
+  },
+  hidden: {
+    display: "none",
   },
   stage: {
     backgroundColor: "#000000",

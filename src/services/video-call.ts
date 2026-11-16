@@ -6,11 +6,17 @@
 
 import { apiRequest } from "@/services/api";
 import type { ApiResource } from "@/types/api";
-import type { CallAccess } from "@/types/call";
+import type { CallAccess, CallType } from "@/types/call";
 
-/** Empieza la llamada: la API prepara la sala, entrega tu token y le avisa a la otra persona. */
-export function startCall(matchId: number) {
-  return apiRequest<ApiResource<CallAccess>>(`/matches/${matchId}/call`, { method: "POST" }).then((res) => res.data);
+/**
+ * Empieza la llamada: la API prepara la sala, entrega tu token y le avisa a la otra persona.
+ * `type` le dice a la otra persona si es videollamada o llamada de voz.
+ */
+export function startCall(matchId: number, type: CallType = "video") {
+  return apiRequest<ApiResource<CallAccess>>(`/matches/${matchId}/call`, {
+    method: "POST",
+    body: { type },
+  }).then((res) => res.data);
 }
 
 /** Contesta o vuelve a entrar: solo entrega tu token, sin avisar a nadie. */

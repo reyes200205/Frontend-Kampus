@@ -2,6 +2,9 @@
 
 import type { Match } from "@/types/discovery";
 
+/** `video`: videollamada; `audio`: llamada de voz (T-20). Usan la misma sala; solo cambia lo que se publica. */
+export type CallType = "video" | "audio";
+
 /** Respuesta de `POST /matches/{match}/call` y `POST /matches/{match}/call/token`. */
 export type CallAccess = {
   /** Servidor de LiveKit (`wss://…`). */
@@ -16,6 +19,8 @@ export type CallAccess = {
 /** Evento `call.started` del canal `user.{id}`: alguien del match te está llamando. */
 export type IncomingCall = {
   match_id: number;
+  /** Puede faltar si la API es anterior a la llamada de voz: entonces es videollamada. */
+  type?: CallType;
   caller: Match["user"];
 };
 

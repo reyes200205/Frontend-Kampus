@@ -15,7 +15,7 @@ const AnswerGreen = "#22C55E";
 const RejectRed = "#EF4444";
 
 /**
- * Llamada entrante (T-20): aparece arriba de cualquier pantalla cuando llega `call.started`.
+ * Llamada entrante, de voz o de video (T-20): aparece arriba de cualquier pantalla cuando llega `call.started`.
  * Contestar abre la pantalla de llamada; rechazar cierra la sala y le avisa a quien llama.
  * Se monta una vez en el layout raíz.
  */
@@ -29,10 +29,12 @@ export function IncomingCall() {
   if (!incoming || !canCall) return null;
 
   const { match_id: matchId, caller } = incoming;
+  const type = incoming.type ?? "video";
+  const label = type === "audio" ? "Llamada de voz entrante" : "Videollamada entrante";
 
   function answer() {
     dismissIncomingCall();
-    router.push({ pathname: "/call/[matchId]", params: { matchId: String(matchId), answer: "1" } });
+    router.push({ pathname: "/call/[matchId]", params: { matchId: String(matchId), answer: "1", type } });
   }
 
   function reject() {
@@ -44,7 +46,7 @@ export function IncomingCall() {
     <SafeAreaView edges={["top", "left", "right"]} style={styles.wrapper} pointerEvents="box-none">
       <View
         accessibilityRole="alert"
-        accessibilityLabel={`Videollamada entrante de ${caller.name}`}
+        accessibilityLabel={`${label} de ${caller.name}`}
         style={[styles.card, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}
       >
         <Avatar uri={caller.photo_url} name={caller.name} size={48} />
@@ -53,7 +55,7 @@ export function IncomingCall() {
             {caller.name}
           </ThemedText>
           <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>
-            Videollamada entrante…
+            {label}…
           </ThemedText>
         </View>
         <RoundButton
@@ -64,7 +66,11 @@ export function IncomingCall() {
         />
         <RoundButton
           label="Contestar"
-          icon={{ ios: "video.fill", android: "videocam", web: "videocam" }}
+          icon={
+            type === "audio"
+              ? { ios: "phone.fill", android: "call", web: "call" }
+              : { ios: "video.fill", android: "videocam", web: "videocam" }
+          }
           color={AnswerGreen}
           onPress={answer}
         />

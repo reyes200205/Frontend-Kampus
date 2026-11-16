@@ -6,13 +6,15 @@ import { loadMatches, useMatches } from "@/hooks/use-matches";
 import { useSession } from "@/hooks/use-session";
 
 /**
- * Videollamada 1 a 1 con un match (T-20, RF-10). `?answer=1` contesta una llamada entrante; sin él, llama.
- * La llamada en sí vive en `CallView` (LiveKit en web; aviso en nativo).
+ * Llamada 1 a 1 con un match (T-20, RF-10). `?answer=1` contesta una llamada entrante; sin él, llama.
+ * `?type=audio` es llamada de voz; sin él, videollamada. La llamada en sí vive en `CallView` (LiveKit en web;
+ * aviso en nativo).
  */
 export default function CallScreen() {
-  const params = useLocalSearchParams<{ matchId: string; answer?: string }>();
+  const params = useLocalSearchParams<{ matchId: string; answer?: string; type?: string }>();
   const matchId = Number(params.matchId);
   const mode = params.answer === "1" ? "answer" : "start";
+  const type = params.type === "audio" ? "audio" : "video";
   const { isSignedIn } = useSession();
   const { matches, status } = useMatches();
   const match = matches.find((item) => item.id === matchId) ?? null;
@@ -30,5 +32,5 @@ export default function CallScreen() {
     else router.replace({ pathname: "/chat/[matchId]", params: { matchId: String(matchId) } });
   }
 
-  return <CallView matchId={matchId} mode={mode} peer={match?.user ?? null} onClose={close} />;
+  return <CallView matchId={matchId} mode={mode} type={type} peer={match?.user ?? null} onClose={close} />;
 }

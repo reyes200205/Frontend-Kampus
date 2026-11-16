@@ -207,22 +207,40 @@ export default function ChatScreen() {
               </ThemedText>
             )}
           </View>
+          {/* Videollamada y llamada de voz (T-20), como en WhatsApp. */}
           {!unavailable && (
-            <Pressable
-              onPress={() =>
-                router.push({ pathname: "/call/[matchId]", params: { matchId: String(matchId) } })
-              }
-              accessibilityRole="button"
-              accessibilityLabel={`Videollamada con ${firstName}`}
-              hitSlop={Spacing.two}
-              style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-            >
-              <SymbolView
-                name={{ ios: "video.fill", android: "videocam", web: "videocam" }}
-                size={24}
-                tintColor={theme.accent}
-              />
-            </Pressable>
+            <View style={[styles.callActions, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <Pressable
+                onPress={() =>
+                  router.push({ pathname: "/call/[matchId]", params: { matchId: String(matchId), type: "video" } })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`Videollamada con ${firstName}`}
+                hitSlop={Spacing.one}
+                style={({ pressed }) => [styles.callAction, pressed && styles.pressed]}
+              >
+                <SymbolView
+                  name={{ ios: "video", android: "videocam", web: "videocam" }}
+                  size={24}
+                  tintColor={theme.text}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  router.push({ pathname: "/call/[matchId]", params: { matchId: String(matchId), type: "audio" } })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`Llamada de voz con ${firstName}`}
+                hitSlop={Spacing.one}
+                style={({ pressed }) => [styles.callAction, pressed && styles.pressed]}
+              >
+                <SymbolView
+                  name={{ ios: "phone", android: "call", web: "call" }}
+                  size={22}
+                  tintColor={theme.text}
+                />
+              </Pressable>
+            </View>
           )}
         </View>
 
@@ -272,6 +290,19 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.6,
+  },
+  callActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.one,
+  },
+  callAction: {
+    width: MinTouchSize,
+    height: MinTouchSize,
+    alignItems: "center",
+    justifyContent: "center",
   },
   body: {
     flex: 1,

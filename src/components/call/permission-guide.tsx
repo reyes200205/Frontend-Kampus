@@ -18,65 +18,99 @@ export type BrowserKind = "ios" | "android" | "desktop";
  */
 export type PermissionProblem = "denied" | "no-device" | "in-use" | "insecure";
 
-const DeniedSteps: Record<BrowserKind, string[]> = {
-  ios: [
-    "En Safari, toca el botón «aA» (o el ícono de ajustes) junto a la dirección.",
-    "Entra a «Configuración del sitio web» y pon Cámara y Micrófono en «Permitir».",
-    "Si no aparece, abre Ajustes del iPhone › Apps › Safari › Cámara y Micrófono y elige «Preguntar» o «Permitir».",
-    "Vuelve a Kampus y toca «Reintentar».",
-  ],
-  android: [
-    "En Chrome, toca el ícono a la izquierda de la dirección.",
-    "Entra a «Permisos» y activa Cámara y Micrófono.",
-    "Si siguen bloqueados, abre Ajustes del teléfono › Apps › Chrome › Permisos y permite Cámara y Micrófono.",
-    "Vuelve a Kampus y toca «Reintentar».",
-  ],
-  desktop: [
-    "Haz clic en el ícono a la izquierda de la dirección (candado o ajustes).",
-    "Pon Cámara y Micrófono en «Permitir».",
-    "Si tu computadora los bloquea, revisa la privacidad del sistema: en Windows, Configuración › Privacidad › Cámara y Micrófono; en macOS, Ajustes del Sistema › Privacidad y seguridad.",
-    "Toca «Reintentar». Si no funciona, recarga la página.",
-  ],
-};
+/** Pasos para dar el permiso en cada navegador. `devices` es «Cámara y Micrófono» o solo «Micrófono». */
+function deniedSteps(browser: BrowserKind, devices: string): string[] {
+  switch (browser) {
+    case "ios":
+      return [
+        "En Safari, toca el botón «aA» (o el ícono de ajustes) junto a la dirección.",
+        `Entra a «Configuración del sitio web» y pon ${devices} en «Permitir».`,
+        `Si no aparece, abre Ajustes del iPhone › Apps › Safari › ${devices} y elige «Preguntar» o «Permitir».`,
+        "Vuelve a Kampus y toca «Reintentar».",
+      ];
+    case "android":
+      return [
+        "En Chrome, toca el ícono a la izquierda de la dirección.",
+        `Entra a «Permisos» y activa ${devices}.`,
+        `Si sigue bloqueado, abre Ajustes del teléfono › Apps › Chrome › Permisos y permite ${devices}.`,
+        "Vuelve a Kampus y toca «Reintentar».",
+      ];
+    default:
+      return [
+        "Haz clic en el ícono a la izquierda de la dirección (candado o ajustes).",
+        `Pon ${devices} en «Permitir».`,
+        "Si tu computadora lo bloquea, revisa la privacidad del sistema: en Windows, Configuración › Privacidad; en macOS, Ajustes del Sistema › Privacidad y seguridad.",
+        "Toca «Reintentar». Si no funciona, recarga la página.",
+      ];
+  }
+}
 
-const Copy: Record<PermissionProblem, { title: string; message: string }> = {
-  denied: {
-    title: "Kampus no tiene acceso a tu cámara",
-    message: "Para la videollamada necesitamos tu cámara y tu micrófono. Puedes darle permiso así:",
-  },
-  "no-device": {
-    title: "No encontramos tu cámara o micrófono",
-    message: "Conecta una cámara y un micrófono (o usa tu celular) y vuelve a intentar.",
-  },
-  "in-use": {
-    title: "Tu cámara está ocupada",
-    message: "Otra app o pestaña está usando la cámara o el micrófono. Ciérrala y vuelve a intentar.",
-  },
-  insecure: {
-    title: "Esta conexión no permite usar la cámara",
-    message:
-      "Los navegadores solo dejan usar la cámara en páginas seguras (https) o en localhost. Abre Kampus desde su dirección https.",
-  },
-};
+function copyFor(problem: PermissionProblem, audioOnly: boolean): { title: string; message: string } {
+  switch (problem) {
+    case "denied":
+      return audioOnly
+        ? {
+            title: "Kampus no tiene acceso a tu micrófono",
+            message: "Para la llamada de voz necesitamos tu micrófono. Puedes darle permiso así:",
+          }
+        : {
+            title: "Kampus no tiene acceso a tu cámara",
+            message: "Para la videollamada necesitamos tu cámara y tu micrófono. Puedes darle permiso así:",
+          };
+    case "no-device":
+      return audioOnly
+        ? {
+            title: "No encontramos tu micrófono",
+            message: "Conecta un micrófono (o usa tu celular) y vuelve a intentar.",
+          }
+        : {
+            title: "No encontramos tu cámara o micrófono",
+            message: "Conecta una cámara y un micrófono (o usa tu celular) y vuelve a intentar.",
+          };
+    case "in-use":
+      return audioOnly
+        ? {
+            title: "Tu micrófono está ocupado",
+            message: "Otra app o pestaña está usando el micrófono. Ciérrala y vuelve a intentar.",
+          }
+        : {
+            title: "Tu cámara está ocupada",
+            message: "Otra app o pestaña está usando la cámara o el micrófono. Ciérrala y vuelve a intentar.",
+          };
+    case "insecure": {
+      const device = audioOnly ? "el micrófono" : "la cámara";
+      return {
+        title: `Esta conexión no permite usar ${device}`,
+        message: `Los navegadores solo dejan usar ${device} en páginas seguras (https) o en localhost. Abre Kampus desde su dirección https.`,
+      };
+    }
+  }
+}
 
 export type PermissionGuideProps = {
   problem: PermissionProblem;
   browser: BrowserKind;
+  /** Llamada de voz: solo hace falta el micrófono. */
+  audioOnly?: boolean;
   onRetry?: () => void;
   onCancel: () => void;
 };
 
-/** Qué pasó con el permiso de cámara y micrófono y cómo arreglarlo en el navegador de la persona (T-20). */
-export function PermissionGuide({ problem, browser, onRetry, onCancel }: PermissionGuideProps) {
+/** Qué pasó con el permiso de cámara o micrófono y cómo arreglarlo en el navegador de la persona (T-20). */
+export function PermissionGuide({ problem, browser, audioOnly = false, onRetry, onCancel }: PermissionGuideProps) {
   const theme = useTheme();
-  const { title, message } = Copy[problem];
-  const steps = problem === "denied" ? DeniedSteps[browser] : [];
+  const { title, message } = copyFor(problem, audioOnly);
+  const steps = problem === "denied" ? deniedSteps(browser, audioOnly ? "Micrófono" : "Cámara y Micrófono") : [];
 
   return (
     <View style={styles.container} accessibilityRole="alert">
       <View style={[styles.iconCircle, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <SymbolView
-          name={{ ios: "video.slash.fill", android: "videocam_off", web: "videocam_off" }}
+          name={
+            audioOnly
+              ? { ios: "mic.slash.fill", android: "mic_off", web: "mic_off" }
+              : { ios: "video.slash.fill", android: "videocam_off", web: "videocam_off" }
+          }
           size={32}
           tintColor={theme.accent}
         />
