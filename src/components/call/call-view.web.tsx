@@ -141,6 +141,23 @@ export function CallView({ matchId, mode, type, peer, onClose }: CallViewProps) 
     [matchId, release],
   );
 
+  /**
+   * La otra persona colgó o rechazó. Llega por dos lados, el que llegue primero: el aviso `call.ended` de Reverb
+   * o LiveKit, que nos saca porque la API cerró la sala. Aquí no se vuelve a llamar a la API.
+   */
+  const endedByOther = useCallback(() => {
+    if (closedRef.current) return;
+    closedRef.current = true;
+    const wasActive = phaseRef.current.name === "active";
+    const name = firstNameRef.current;
+    release();
+    setPhase(
+      wasActive
+        ? { name: "ended", title: "Llamada terminada", message: `${name} colgó.` }
+        : { name: "ended", title: "Llamada rechazada", message: `${name} no puede contestar ahora.` },
+    );
+  }, [release]);
+
   const begin = useCallback(async () => {
     // Un intento anterior (p. ej. «Reintentar») no puede dejar la cámara encendida.
     release();
@@ -156,6 +173,9 @@ export function CallView({ matchId, mode, type, peer, onClose }: CallViewProps) 
     setPhase({ name: "requesting" });
     const lk = await import("livekit-client");
     if (stale()) return;
+    // La llamada termina cuando la API cierra la sala, y LiveKit lo reporta con `console.error` («data channel
+    // closed unexpectedly»), que Expo muestra como error en desarrollo. Los fallos reales ya se muestran en pantalla.
+    lk.setLogLevel(lk.LogLevel.silent);
 
     // 1. Cámara y micrófono. Si fallan, la otra persona no se entera de nada.
     let tracks: LocalTrack[];
@@ -251,9 +271,16 @@ export function CallView({ matchId, mode, type, peer, onClose }: CallViewProps) 
       .on(lk.RoomEvent.ParticipantDisconnected, () => {
         finish("Llamada terminada", `${firstNameRef.current} salió de la llamada.`, true);
       })
-      .on(lk.RoomEvent.Disconnected, () => {
+      .on(lk.RoomEvent.Disconnected, (reason) => {
         if (roomRef.current !== room) return;
-        finish("Llamada terminada", "Se perdió la conexión con la llamada.", true);
+        if (reason === lk.DisconnectReason.ROOM_DELETED || reason === lk.DisconnectReason.PARTICIPANT_REMOVED) {
+          // La API cerró la sala: la otra persona colgó o rechazó.
+          endedByOther();
+        } else if (reason === lk.DisconnectReason.DUPLICATE_IDENTITY) {
+          finish("Llamada abierta en otro lugar", "Entraste a esta llamada desde otra pestaña o dispositivo.", false);
+        } else {
+          finish("Llamada terminada", "Se perdió la conexión con la llamada.", true);
+        }
       })
       .on(lk.RoomEvent.AudioPlaybackStatusChanged, () => setNeedsAudioTap(!room.canPlaybackAudio));
 
@@ -270,7 +297,7 @@ export function CallView({ matchId, mode, type, peer, onClose }: CallViewProps) 
 
     setNeedsAudioTap(!room.canPlaybackAudio);
     setPhase(room.remoteParticipants.size > 0 ? { name: "active", since: Date.now() } : { name: "ringing" });
-  }, [audioOnly, finish, matchId, mode, release, type]);
+  }, [audioOnly, endedByOther, finish, matchId, mode, release, type]);
 
   // Al abrir: si los permisos ya estaban dados, la llamada empieza sola; si no, primero se explica.
   useEffect(() => {
@@ -303,17 +330,9 @@ export function CallView({ matchId, mode, type, peer, onClose }: CallViewProps) 
   useEffect(
     () =>
       onCallEnded((call) => {
-        if (call.match_id !== matchId || closedRef.current) return;
-        closedRef.current = true;
-        const wasActive = phaseRef.current.name === "active";
-        release();
-        setPhase(
-          wasActive
-            ? { name: "ended", title: "Llamada terminada", message: `${firstName} colgó.` }
-            : { name: "ended", title: "Llamada rechazada", message: `${firstName} no puede contestar ahora.` },
-        );
+        if (call.match_id === matchId) endedByOther();
       }),
-    [firstName, matchId, release],
+    [endedByOther, matchId],
   );
 
   // Nadie contestó.
