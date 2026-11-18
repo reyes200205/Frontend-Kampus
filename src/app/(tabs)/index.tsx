@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { FiltersPanel, countActiveFilters } from "@/components/discover/filters-panel";
 import { SwipeDeck } from "@/components/discover/swipe-deck";
-import { KampusMap } from "@/components/map/kampus-map";
+import { NearbyMap } from "@/components/discover/nearby-map";
 import { MatchModal } from "@/components/matches/match-modal";
 import { Screen } from "@/components/layout/screen";
 import { ThemedText } from "@/components/themed-text";
@@ -155,7 +155,7 @@ type Discovery = ReturnType<typeof useDiscovery>;
 
 /**
  * Modo "Cerca". Si el alumno no ha activado "Cerca de ti", se lo recuerda con un botón que lo lleva a
- * activarlo (T-36). Con "Cerca de ti" activo muestra el mapa (T-29) centrado en su última celda.
+ * activarlo (T-36). Con "Cerca de ti" activo muestra el mapa con quienes están cerca (T-29 y T-30).
  */
 function NearbyArea() {
   const theme = useTheme();
@@ -212,30 +212,10 @@ function NearbyArea() {
     );
   }
 
-  // El mapa se centra en la última celda de ~1 km que compartiste (solo tú la ves). La zona declarada ya
-  // no se usa en Cerca.
-  // TODO (T-30): avatares de quienes están cerca (GET /discover/nearby) con ficha rápida y distancia.
-  const center = geohashCenter(location.geohash);
-
+  // Mientras responde la API, el mapa se centra en la última celda de ~1 km que compartiste (solo tú la
+  // ves). La zona declarada ya no se usa en Cerca.
   return (
-    <View style={styles.nearby}>
-      <KampusMap
-        center={center}
-        markers={[{ id: "me", coordinate: center, label: "Tú" }]}
-        accessibilityLabel="Mapa de tu ubicación aproximada"
-        style={[styles.map, { height: mapHeight, borderColor: theme.border }]}
-      />
-      <View style={[styles.mapNotice, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <SymbolView
-          name={{ ios: "lock.fill", android: "lock", web: "lock" }}
-          size={16}
-          tintColor={theme.textSecondary}
-        />
-        <ThemedText type="caption" themeColor="textSecondary" style={styles.flex}>
-          Solo mostramos ubicaciones aproximadas, nunca la exacta de nadie.
-        </ThemedText>
-      </View>
-    </View>
+    <NearbyMap fallbackCenter={geohashCenter(location.geohash)} cell={location.geohash} height={mapHeight} />
   );
 }
 
@@ -433,23 +413,6 @@ const styles = StyleSheet.create({
   nearbyLoading: {
     flexGrow: 1,
     paddingVertical: Spacing.six,
-  },
-  nearby: {
-    gap: Spacing.three,
-  },
-  map: {
-    borderRadius: Radius.large,
-    borderWidth: 1,
-  },
-  mapNotice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-    alignSelf: "flex-start",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.full,
-    borderWidth: 1,
   },
   notice: {
     flexDirection: "row",

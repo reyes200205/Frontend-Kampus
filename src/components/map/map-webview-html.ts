@@ -25,6 +25,8 @@ export type MapHtmlOptions = {
   zoom: number;
   minZoom: number;
   maxZoom: number;
+  fitMaxZoom: number;
+  fitPadding: number;
   interactive: boolean;
   css: string;
 };
@@ -70,26 +72,64 @@ ${css}
   map.touchZoomRotate.disableRotation();
   map.once("load", function () { post({ type: "ready" }); });
   map.on("error", function () { if (!map.loaded()) post({ type: "error" }); });
+  // Los marcadores son botones fuera del canvas: este click solo llega al tocar el mapa.
+  map.on("click", function () { post({ type: "press" }); });
+
+  // Debe dibujar lo mismo que createMarkerElement en kampus-map.web.tsx.
+  function createMarker(item) {
+    var el = document.createElement("button");
+    el.type = "button";
+    el.className = "kampus-marker" + (item.selected ? " kampus-marker--selected" : "");
+    el.setAttribute("aria-label", item.label || "Marcador");
+    el.style.zIndex = item.selected ? "3" : item.kind === "avatar" ? "2" : "1";
+
+    if (item.kind === "avatar") {
+      var avatar = document.createElement("span");
+      avatar.className = "kampus-avatar";
+      var showInitial = function () {
+        avatar.textContent = "";
+        var initial = document.createElement("span");
+        initial.className = "kampus-avatar__initial";
+        initial.textContent = (item.label || "?").trim().charAt(0).toUpperCase();
+        avatar.appendChild(initial);
+      };
+      if (item.photoUrl) {
+        var img = document.createElement("img");
+        img.src = item.photoUrl;
+        img.alt = "";
+        img.draggable = false;
+        img.addEventListener("error", showInitial);
+        avatar.appendChild(img);
+      } else {
+        showInitial();
+      }
+      el.appendChild(avatar);
+      return el;
+    }
+
+    var dot = document.createElement("span");
+    dot.className = "kampus-marker__dot";
+    el.appendChild(dot);
+    if (item.label) {
+      var text = document.createElement("span");
+      text.className = "kampus-marker__label";
+      text.textContent = item.label;
+      el.appendChild(text);
+    }
+    return el;
+  }
 
   var markers = [];
   function setMarkers(list) {
     markers.forEach(function (m) { m.remove(); });
     markers = list.map(function (item) {
-      var el = document.createElement("button");
-      el.type = "button";
-      el.className = "kampus-marker";
-      el.setAttribute("aria-label", item.label || "Marcador");
-      var dot = document.createElement("span");
-      dot.className = "kampus-marker__dot";
-      el.appendChild(dot);
-      if (item.label) {
-        var text = document.createElement("span");
-        text.className = "kampus-marker__label";
-        text.textContent = item.label;
-        el.appendChild(text);
-      }
-      el.addEventListener("click", function () { post({ type: "marker", id: item.id }); });
-      return new maplibregl.Marker({ element: el, anchor: "left", offset: [-8, 0] })
+      var el = createMarker(item);
+      el.addEventListener("click", function (event) {
+        event.stopPropagation();
+        post({ type: "marker", id: item.id });
+      });
+      var placement = item.kind === "avatar" ? { element: el, anchor: "center" } : { element: el, anchor: "left", offset: [-8, 0] };
+      return new maplibregl.Marker(placement)
         .setLngLat([item.coordinate.lng, item.coordinate.lat])
         .addTo(map);
     });
@@ -98,6 +138,14 @@ ${css}
   window.kampusUpdate = function (update) {
     if (update.center) map.easeTo({ center: [update.center.lng, update.center.lat], zoom: update.zoom });
     if (update.markers) setMarkers(update.markers);
+    if (update.fitTo && update.fitTo.length > 0) {
+      var lngs = update.fitTo.map(function (p) { return p.lng; });
+      var lats = update.fitTo.map(function (p) { return p.lat; });
+      map.fitBounds(
+        [[Math.min.apply(null, lngs), Math.min.apply(null, lats)], [Math.max.apply(null, lngs), Math.max.apply(null, lats)]],
+        { padding: o.fitPadding, maxZoom: o.fitMaxZoom, duration: 700 }
+      );
+    }
   };
 })();
 </script>

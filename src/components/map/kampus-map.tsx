@@ -26,13 +26,15 @@ const MapWebView = WebView<object>;
 type MapWebViewRef = InstanceType<typeof MapWebView>;
 
 type Status = "loading" | "ready" | "error";
-type MapMessage = { type: "ready" } | { type: "error" } | { type: "marker"; id: string };
+type MapMessage = { type: "ready" } | { type: "error" } | { type: "press" } | { type: "marker"; id: string };
 
 export function KampusMap({
   center,
   zoom = MapDefaults.zoom,
+  fitTo,
   markers = [],
   onMarkerPress,
+  onPress,
   interactive = true,
   style,
   accessibilityLabel = "Mapa",
@@ -54,6 +56,8 @@ export function KampusMap({
         zoom: initialView.zoom,
         minZoom: MapDefaults.minZoom,
         maxZoom: MapDefaults.maxZoom,
+        fitMaxZoom: MapDefaults.fitMaxZoom,
+        fitPadding: MapDefaults.fitPadding,
         interactive,
         css: markerCss(theme.accent, theme.onAccent, theme.background),
       }),
@@ -64,9 +68,14 @@ export function KampusMap({
     webViewRef.current?.injectJavaScript(`window.kampusUpdate && window.kampusUpdate(${toScriptJson(update)}); true;`);
   };
 
+  const fitKey = fitTo && fitTo.length > 0 ? JSON.stringify(fitTo) : null;
+
   useEffect(() => {
-    if (status === "ready") send({ center: { lat: center.lat, lng: center.lng }, zoom });
-  },[center.lat, center.lng, zoom, status]);
+    if (status !== "ready") return;
+    // Si hay puntos que encuadrar, mandan sobre el centro y el zoom.
+    if (fitKey) send({ fitTo: JSON.parse(fitKey) });
+    else send({ center: { lat: center.lat, lng: center.lng }, zoom });
+  }, [center.lat, center.lng, zoom, fitKey, status]);
 
   const markersKey = JSON.stringify(markers);
   useEffect(() => {
@@ -84,6 +93,7 @@ export function KampusMap({
     if (message.type === "ready") setStatus("ready");
     else if (message.type === "error") setStatus("error");
     else if (message.type === "marker") onMarkerPress?.(message.id);
+    else if (message.type === "press") onPress?.();
   }
 
   return (
