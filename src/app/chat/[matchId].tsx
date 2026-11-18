@@ -26,6 +26,7 @@ import { useSession } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
 import { isRealtimeEnabled, listenToChat } from "@/services/realtime";
 import type { ChatMessage } from "@/types/chat";
+import { isStaff } from "@/utils/roles";
 
 /** Sin Reverb configurado, la conversación abierta se actualiza cada 8 s. */
 const PollMs = 8_000;
@@ -100,6 +101,8 @@ export default function ChatScreen() {
 
   // La sesión vive en memoria: al recargar la página en web hay que volver a iniciar sesión.
   if (!isSignedIn) return <Redirect href="/auth/login" />;
+  // El staff no tiene chats (T-44).
+  if (isStaff(user)) return <Redirect href="/management" />;
 
   const name = match?.user.name ?? "Conversación";
   const firstName = name.split(" ")[0];

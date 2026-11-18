@@ -29,6 +29,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
 import { getInterests, updateInterests, updateProfile } from "@/services/profile";
 import type { Gender, Interest, Profile, ProfileStep } from "@/types/profile";
+import { isStaff } from "@/utils/roles";
 
 /** Pasos obligatorios, en el orden que manda el backend en `completion.missing` (T-49). */
 const Steps: { key: ProfileStep; title: string; subtitle: string }[] = [
@@ -107,6 +108,8 @@ export default function OnboardingScreen() {
   }, [step, catalog]);
 
   if (!isSignedIn) return <Redirect href="/auth/login" />;
+  // El staff no tiene perfil social (T-44).
+  if (isStaff(user)) return <Redirect href="/management" />;
 
   /** Después de guardar: siguiente paso pendiente o la pantalla final. */
   function advance(updated: Profile, current: number) {

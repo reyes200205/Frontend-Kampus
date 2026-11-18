@@ -8,9 +8,11 @@ export type KampusLogoProps = {
   size?: number;
   /** `stacked`: pin arriba del nombre (pantallas de acceso). `inline`: pin a la izquierda (barra lateral). */
   layout?: "stacked" | "inline";
+  /** `false` muestra solo el pin (barra lateral compacta). */
+  wordmark?: boolean;
 };
 
-export function KampusLogo({ size = 56, layout = "stacked" }: KampusLogoProps) {
+export function KampusLogo({ size = 56, layout = "stacked", wordmark = true }: KampusLogoProps) {
   const theme = useTheme();
   const inline = layout === "inline";
 
@@ -43,14 +45,16 @@ export function KampusLogo({ size = 56, layout = "stacked" }: KampusLogoProps) {
         </Text>
       </View>
 
-      <Text
-        style={[
-          styles.wordmark,
-          { fontSize: size * (inline ? 0.6 : 0.5), color: theme.text },
-        ]}
-      >
-        <Text style={{ color: theme.accent }}>Kam</Text>pus
-      </Text>
+      {wordmark && (
+        <Text
+          style={[
+            styles.wordmark,
+            { fontSize: size * (inline ? 0.6 : 0.5), color: theme.text },
+          ]}
+        >
+          <Text style={{ color: theme.accent }}>Kam</Text>pus
+        </Text>
+      )}
     </View>
   );
 }
