@@ -9,7 +9,7 @@ import { useSyncExternalStore } from "react";
 
 import { ApiError } from "@/services/api";
 import { getMessages, markMessagesRead, sendMessage } from "@/services/messages";
-import type { ChatMessage, Message } from "@/types/chat";
+import type { ChatMessage, LocalChatImage, Message } from "@/types/chat";
 
 const PageSize = 30;
 /** Las vistas previas de la lista se vuelven a pedir si tienen más de 30 s. */
@@ -73,7 +73,11 @@ function rank(message: ChatMessage) {
 function merge(existing: ChatMessage[], incoming: ChatMessage[]) {
   const byId = new Map<number, ChatMessage>();
   for (const message of existing) byId.set(message.id, message);
-  for (const message of incoming) byId.set(message.id, message);
+  for (const message of incoming) {
+    // Una imagen propia se sigue dibujando desde el archivo local aunque llegue la versión de la API.
+    const local = byId.get(message.id)?.local_image;
+    byId.set(message.id, local && !message.local_image ? { ...message, local_image: local } : message);
+  }
   return [...byId.values()].sort((a, b) => rank(b) - rank(a));
 }
 
@@ -128,47 +132,56 @@ export async function loadOlderMessages(matchId: number) {
   }
 }
 
-async function deliver(matchId: number, tempId: number, body: string) {
+async function deliver(matchId: number, tempId: number, body: string, image?: LocalChatImage) {
   try {
-    const message = await sendMessage(matchId, body);
+    const sent = await sendMessage(matchId, body, image?.file);
+    const message: ChatMessage = image ? { ...sent, local_image: image } : sent;
     const rest = get(matchId).messages.filter((item) => item.id !== tempId);
     update(matchId, { messages: merge(rest, [message]), preview: message, previewAt: Date.now() });
   } catch (e) {
+    const fallback = image ? "No se pudo enviar la imagen." : "No se pudo enviar el mensaje.";
     update(matchId, {
       messages: get(matchId).messages.map((item) =>
         item.id === tempId ? { ...item, pending: "failed" } : item,
       ),
-      error: errorMessage(e, "No se pudo enviar el mensaje."),
+      // En una imagen, el 422 trae el motivo en el campo `image` (formato, peso o archivo dañado).
+      error: e instanceof ApiError ? (e.field("image") ?? e.field("body") ?? e.message) : fallback,
     });
   }
 }
 
-/** Envía un mensaje: aparece al instante y se confirma cuando responde la API. */
-export function sendChatMessage(matchId: number, senderId: number, body: string) {
+/**
+ * Envía un mensaje: aparece al instante y se confirma cuando responde la API. Con `image` es una
+ * foto (T-15) y `body` es su texto opcional.
+ */
+export function sendChatMessage(matchId: number, senderId: number, body: string, image?: LocalChatImage) {
   const tempId = nextTempId--;
   const message: ChatMessage = {
     id: tempId,
     match_id: matchId,
     sender_id: senderId,
-    type: "text",
-    body,
+    type: image ? "image" : "text",
+    body: body === "" ? null : body,
+    image_url: null,
     read_at: null,
     created_at: new Date().toISOString(),
     pending: "sending",
+    local_image: image,
   };
   update(matchId, { messages: merge(get(matchId).messages, [message]), error: null });
-  void deliver(matchId, tempId, body);
+  void deliver(matchId, tempId, body, image);
 }
 
 /** Reintenta un mensaje que no se pudo enviar. */
 export function retryChatMessage(matchId: number, tempId: number) {
   const message = get(matchId).messages.find((item) => item.id === tempId);
-  if (!message || message.pending !== "failed" || !message.body) return;
+  if (!message || message.pending !== "failed") return;
+  if (!message.local_image && !message.body) return;
   update(matchId, {
     messages: get(matchId).messages.map((item) => (item.id === tempId ? { ...item, pending: "sending" } : item)),
     error: null,
   });
-  void deliver(matchId, tempId, message.body);
+  void deliver(matchId, tempId, message.body ?? "", message.local_image);
 }
 
 /** Mensaje que llegó por Reverb. */

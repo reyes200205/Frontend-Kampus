@@ -207,7 +207,7 @@ function ConversationRow({ match, last, myId }: { match: Match; last: ChatMessag
     ? `${user.university?.short_name ?? "Kampus"} · Hicieron match`
     : last.type === "text"
       ? `${mine ? "Tú: " : ""}${last.body ?? ""}`
-      : `${mine ? "Tú: " : ""}Imagen`;
+      : `${mine ? "Tú: " : ""}Imagen${last.body ? ` · ${last.body}` : ""}`;
 
   return (
     <Pressable
