@@ -68,6 +68,8 @@ export default function RootLayout() {
         <StatusBar style={ActiveThemeMode === 'dark' ? 'light' : 'dark'} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          {/* Panel de gestión del staff (T-44). */}
+          <Stack.Screen name="management" />
           <Stack.Screen name="auth/login/index" />
           <Stack.Screen name="auth/verify-email/index" />
           <Stack.Screen name="profile/edit" />

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { CallView } from "@/components/call/call-view";
 import { loadMatches, useMatches } from "@/hooks/use-matches";
 import { useSession } from "@/hooks/use-session";
+import { isStaff } from "@/utils/roles";
 
 /**
  * Llamada 1 a 1 con un match (T-20, RF-10). `?answer=1` contesta una llamada entrante; sin él, llama.
@@ -15,7 +16,7 @@ export default function CallScreen() {
   const matchId = Number(params.matchId);
   const mode = params.answer === "1" ? "answer" : "start";
   const type = params.type === "audio" ? "audio" : "video";
-  const { isSignedIn } = useSession();
+  const { isSignedIn, user } = useSession();
   const { matches, status } = useMatches();
   const match = matches.find((item) => item.id === matchId) ?? null;
 
@@ -25,6 +26,8 @@ export default function CallScreen() {
   }, [match, status]);
 
   if (!isSignedIn) return <Redirect href="/auth/login" />;
+  // El staff no hace videollamadas (T-44).
+  if (isStaff(user)) return <Redirect href="/management" />;
   if (!Number.isInteger(matchId) || matchId <= 0) return <Redirect href="/chats" />;
 
   function close() {

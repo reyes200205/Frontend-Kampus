@@ -7,6 +7,7 @@
 import { clearChats } from "@/hooks/use-chat";
 import { clearLocation } from "@/hooks/use-location";
 import { clearMatches } from "@/hooks/use-matches";
+import { clearPendingGroups } from "@/hooks/use-pending-groups";
 import { clearProfile } from "@/hooks/use-profile";
 import { signOut } from "@/hooks/use-session";
 import { setUnauthorizedHandler } from "@/services/api";
@@ -23,6 +24,7 @@ export async function endSession({ revoke = false }: { revoke?: boolean } = {}) 
   clearLocation();
   clearMatches();
   clearChats();
+  clearPendingGroups();
   disconnectRealtime();
   signOut();
 }
