@@ -2,7 +2,7 @@
 
 import { apiRequest } from "@/services/api";
 import type { ApiResource } from "@/types/api";
-import type { DiscoveryCard, DiscoveryFilters, SwipeResult } from "@/types/discovery";
+import type { DiscoveryCard, DiscoveryFilters, NearbyResponse, SwipeResult } from "@/types/discovery";
 
 export const EmptyFilters: DiscoveryFilters = { universities: [], career: null, interests: [] };
 
@@ -12,6 +12,15 @@ export const EmptyFilters: DiscoveryFilters = { universities: [], career: null, 
  */
 export function getDiscovery(limit = 10) {
   return apiRequest<ApiResource<DiscoveryCard[]>>(`/discover?limit=${limit}`).then((res) => res.data);
+}
+
+/**
+ * Quién está cerca (T-35, RF-19): estudiantes con "Cerca de ti" activo a menos de `meta.radius_km`,
+ * del más cercano al más lejano, con los mismos filtros y reglas que Descubrir. Responde 403
+ * (`nearby_disabled`) si quien consulta no comparte su celda.
+ */
+export function getNearby(limit = 30) {
+  return apiRequest<NearbyResponse>(`/discover/nearby?limit=${limit}`);
 }
 
 export function getDiscoveryFilters() {
