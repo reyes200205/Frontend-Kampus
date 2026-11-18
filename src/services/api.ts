@@ -73,8 +73,13 @@ export async function apiRequest<T>(
   if (response.status === 401 && token) onUnauthorized?.();
 
   if (!response.ok) {
+    // Un 5xx sin `code` propio es un error no controlado: con APP_DEBUG su mensaje trae detalles
+    // internos (SQL, rutas), así que no se muestra. Los que sí manda la API con `code` (T-52) son para el usuario.
+    const unhandled = response.status >= 500 && !data?.code;
     throw new ApiError(
-      data?.message ?? "Ocurrió un error inesperado. Intenta de nuevo.",
+      unhandled
+        ? "Ocurrió un error en el servidor. Intenta de nuevo en unos minutos."
+        : (data?.message ?? "Ocurrió un error inesperado. Intenta de nuevo."),
       response.status,
       data?.errors ?? {},
       data?.code,

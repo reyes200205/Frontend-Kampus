@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
+import { bubbleColors } from "@/constants/chat-style";
 import { Radius, Spacing } from "@/constants/theme";
+import { useChatStyle } from "@/hooks/use-chat-style";
 import { useTheme } from "@/hooks/use-theme";
 import type { ChatMessage } from "@/types/chat";
 
@@ -22,6 +24,8 @@ export function messageTime(createdAt: string | null) {
 /** Burbuja de un mensaje: a la derecha con el color de marca si es propio, a la izquierda si no. */
 export function MessageBubble({ message, mine, showStatus, onRetry }: MessageBubbleProps) {
   const theme = useTheme();
+  // Color elegido en Perfil → Apariencia → Estilo predeterminado del chat.
+  const own = bubbleColors(useChatStyle().bubble, theme);
   const failed = message.pending === "failed";
   const status = failed
     ? "No se envió · Toca para reintentar"
@@ -46,7 +50,7 @@ export function MessageBubble({ message, mine, showStatus, onRetry }: MessageBub
         style={[
           styles.bubble,
           mine
-            ? { backgroundColor: theme.accent, borderBottomRightRadius: Radius.small / 2 }
+            ? { backgroundColor: own.background, borderBottomRightRadius: Radius.small / 2 }
             : {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
@@ -60,11 +64,11 @@ export function MessageBubble({ message, mine, showStatus, onRetry }: MessageBub
         <ThemedText
           type="small"
           selectable
-          style={[mine && { color: theme.onAccent }, message.type !== "text" && styles.italic]}
+          style={[mine && { color: own.text }, message.type !== "text" && styles.italic]}
         >
           {body}
         </ThemedText>
-        <ThemedText type="caption" style={[styles.time, { color: mine ? theme.onAccent : theme.textSecondary }]}>
+        <ThemedText type="caption" style={[styles.time, { color: mine ? own.text : theme.textSecondary }]}>
           {messageTime(message.created_at)}
         </ThemedText>
       </Pressable>

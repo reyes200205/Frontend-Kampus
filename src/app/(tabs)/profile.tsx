@@ -1,7 +1,7 @@
-import { router, useFocusEffect, type Href } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useCallback, type ReactNode } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Screen } from "@/components/layout/screen";
@@ -10,11 +10,11 @@ import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { MenuGroup, MenuRow } from "@/components/ui/menu-list";
 import { ageFromBirthdate, MinInterests } from "@/constants/profile";
 import {
   BottomTabInset,
   MaxContentWidth,
-  MinTouchSize,
   Radius,
   Spacing,
 } from "@/constants/theme";
@@ -75,9 +75,7 @@ export default function ProfileScreen() {
   }
 
   const details = data.profile;
-  const locationSummary = location
-    ? location.nearby_enabled ? "Activo" : "Apagado"
-    : undefined;
+  const locationSummary = location ? (location.nearby_enabled ? "Activo" : "Apagado") : undefined;
   const photos = details?.photos ?? [];
   const interests = details?.interests ?? [];
   const age = ageFromBirthdate(details?.birthdate ?? null);
@@ -162,33 +160,38 @@ export default function ProfileScreen() {
               </Card>
             )}
 
-            <Card style={styles.menu}>
+            <MenuGroup>
               <MenuRow
                 icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
                 label="Cerca de ti"
                 value={locationSummary}
-                href="/profile/location"
+                onPress={() => router.push("/profile/location")}
               />
-              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <MenuRow
+                icon={{ ios: "paintbrush", android: "palette", web: "palette" }}
+                label="Apariencia"
+                onPress={() => router.push("/profile/appearance")}
+              />
               <MenuRow
                 icon={{ ios: "lock.shield", android: "shield", web: "shield" }}
                 label="Aviso de privacidad"
-                href="/legal/privacy"
+                onPress={() => router.push("/legal/privacy")}
               />
-              <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <MenuRow
                 icon={{ ios: "person.2", android: "diversity_3", web: "diversity_3" }}
                 label="Normas de comunidad"
-                href="/legal/guidelines"
+                onPress={() => router.push("/legal/guidelines")}
               />
-            </Card>
+            </MenuGroup>
 
-            <Button
-              title="Cerrar sesión"
-              variant="secondary"
-              icon={{ ios: "rectangle.portrait.and.arrow.right", android: "logout", web: "logout" }}
-              onPress={handleSignOut}
-            />
+            <MenuGroup>
+              <MenuRow
+                icon={{ ios: "rectangle.portrait.and.arrow.right", android: "logout", web: "logout" }}
+                label="Cerrar sesión"
+                onPress={handleSignOut}
+                destructive
+              />
+            </MenuGroup>
           </View>
         </View>
       </ScrollView>
@@ -239,43 +242,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function MenuRow({
-  icon,
-  label,
-  value,
-  href,
-}: {
-  icon: SymbolViewProps["name"];
-  label: string;
-  /** Dato corto debajo del texto (p. ej. si Cerca de ti está activo). */
-  value?: string;
-  href: Href;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      onPress={() => router.push(href)}
-      accessibilityRole="link"
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-    >
-      <SymbolView name={icon} size={20} tintColor={theme.textSecondary} />
-      <View style={styles.flex}>
-        <ThemedText>{label}</ThemedText>
-        {value && (
-          <ThemedText type="caption" themeColor="textSecondary">
-            {value}
-          </ThemedText>
-        )}
-      </View>
-      <SymbolView
-        name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-        size={16}
-        tintColor={theme.placeholder}
-      />
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   flex: {
@@ -349,21 +315,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.three,
-  },
-  menu: {
-    paddingVertical: Spacing.one,
-    gap: 0,
-  },
-  row: {
-    minHeight: MinTouchSize + 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.three,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-  },
-  pressed: {
-    opacity: 0.7,
   },
 });

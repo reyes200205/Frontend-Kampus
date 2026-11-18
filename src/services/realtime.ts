@@ -15,6 +15,7 @@
 import type Echo from "laravel-echo";
 
 import { getToken } from "@/hooks/use-session";
+import type { EndedCall, IncomingCall } from "@/types/call";
 import type { Message } from "@/types/chat";
 import type { Match } from "@/types/discovery";
 
@@ -29,7 +30,16 @@ let echo: Echo<"reverb"> | null = null;
 let echoToken: string | null = null;
 
 type Handler = (payload: never) => void;
-type Subscription = { handlers: Set<Handler>; client: Echo<"reverb"> | null };
+/**
+ * Un canal con sus eventos: cada evento tiene sus funciones y se registra en Echo una sola vez.
+ * Un mismo canal puede escuchar varios eventos (p. ej. `user.{id}` recibe matches y llamadas).
+ */
+type Subscription = {
+  events: Map<string, Set<Handler>>;
+  /** Eventos ya registrados en Echo. */
+  bound: Set<string>;
+  client: Echo<"reverb"> | null;
+};
 const subscriptions = new Map<string, Subscription>();
 
 /** `true` si la app tiene la clave de Reverb para conectarse en tiempo real. */
@@ -75,8 +85,21 @@ async function getEcho() {
 function listen<T>(name: string, event: string, handler: (payload: T) => void) {
   let subscription = subscriptions.get(name);
 
+  // Registra en Echo los eventos del canal que todavía no lo están (si ya hay conexión).
+  const bindEvents = (sub: Subscription) => {
+    if (!sub.client) return;
+    const channel = sub.client.private(name);
+    for (const [eventName, handlers] of sub.events) {
+      if (sub.bound.has(eventName)) continue;
+      sub.bound.add(eventName);
+      channel.listen(eventName, (payload: unknown) => {
+        handlers.forEach((fn) => (fn as (payload: unknown) => void)(payload));
+      });
+    }
+  };
+
   if (!subscription) {
-    const created: Subscription = { handlers: new Set(), client: null };
+    const created: Subscription = { events: new Map(), bound: new Set(), client: null };
     subscription = created;
     subscriptions.set(name, created);
     void getEcho()
@@ -84,19 +107,29 @@ function listen<T>(name: string, event: string, handler: (payload: T) => void) {
         // Pudo dejar de escucharse (o cerrarse la sesión) mientras se conectaba.
         if (!client || subscriptions.get(name) !== created) return;
         created.client = client;
-        client.private(name).listen(event, (payload: T) => {
-          created.handlers.forEach((fn) => (fn as (payload: T) => void)(payload));
-        });
+        bindEvents(created);
       })
       .catch(() => undefined);
   }
 
   const current = subscription;
-  current.handlers.add(handler as Handler);
+  let handlers = current.events.get(event);
+  if (!handlers) {
+    handlers = new Set();
+    current.events.set(event, handlers);
+  }
+  handlers.add(handler as Handler);
+  bindEvents(current);
 
   return () => {
-    current.handlers.delete(handler as Handler);
-    if (current.handlers.size > 0 || subscriptions.get(name) !== current) return;
+    const eventHandlers = current.events.get(event);
+    eventHandlers?.delete(handler as Handler);
+    if (subscriptions.get(name) !== current) return;
+    if (eventHandlers && eventHandlers.size === 0) {
+      current.events.delete(event);
+      if (current.bound.delete(event)) current.client?.private(name).stopListening(event);
+    }
+    if (current.events.size > 0) return;
     subscriptions.delete(name);
     current.client?.leave(name);
   };
@@ -120,6 +153,26 @@ export function listenToNewMatches(userId: number, onMatch: (match: Match) => vo
     const other = match.users.find((user) => user.id !== userId);
     if (other) onMatch({ id: match.id, matched_at: match.matched_at, user: other });
   });
+}
+
+/**
+ * Videollamadas en el canal propio `user.{userId}` (T-19): `call.started` cuando alguien del match te llama
+ * y `call.ended` cuando la otra persona cuelga o rechaza.
+ */
+export function listenToCalls(
+  userId: number,
+  handlers: { onStarted: (call: IncomingCall) => void; onEnded: (call: EndedCall) => void },
+) {
+  const stopStarted = listen<{ call: IncomingCall }>(`user.${userId}`, ".call.started", ({ call }) =>
+    handlers.onStarted(call),
+  );
+  const stopEnded = listen<{ call: EndedCall }>(`user.${userId}`, ".call.ended", ({ call }) =>
+    handlers.onEnded(call),
+  );
+  return () => {
+    stopStarted();
+    stopEnded();
+  };
 }
 
 /** Cierra la conexión al cerrar sesión, para que la siguiente cuenta no herede los canales. */
