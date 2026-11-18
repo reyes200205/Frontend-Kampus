@@ -8,17 +8,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
 import { MaxFormWidth, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { loadLocation, setLocation, useLocation } from "@/hooks/use-location";
-import { useSession } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
-import { disableNearby, enableNearby, setZone } from "@/services/location";
-import type { Zone } from "@/types/location";
+import { disableNearby, enableNearby } from "@/services/location";
 import { encodeGeohash } from "@/utils/geohash";
-
-type Busy = "zone" | "nearby" | null;
 
 function apiMessage(e: unknown, fallback: string) {
   return e instanceof ApiError ? e.message : fallback;
@@ -30,46 +25,23 @@ function goBack() {
 }
 
 /**
- * Zona y "Cerca de ti" (T-36, RF-18 y RNF-11). El alumno elige su campus o colonia del catálogo y,
- * si quiere, activa "Cerca de ti": antes de pedir el permiso se explica qué se comparte, y del GPS
- * solo sale la celda de ~1 km (geohash de 6 caracteres), nunca la coordenada.
+ * "Cerca de ti" (T-36, RF-18 y RNF-11): antes de pedir el permiso se explica qué se comparte, y del GPS
+ * solo sale la celda de ~1 km (geohash de 6 caracteres), nunca la coordenada. La vista Cerca usa la última
+ * celda que se compartió; la zona declarada (catálogo de campus y colonias) ya no se pide aquí, aunque la
+ * API la conserva.
  */
 export default function LocationScreen() {
   const theme = useTheme();
-  const { user } = useSession();
-  const { location, zones, loading, error } = useLocation();
-  const [busy, setBusy] = useState<Busy>(null);
+  const { location, loading, error } = useLocation();
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; danger?: boolean } | null>(null);
 
   useEffect(() => {
-    void loadLocation({ withZones: true });
+    void loadLocation();
   }, []);
 
-  // Primero los campus (el de su universidad al inicio) y después las colonias.
-  const campuses = zones
-    .filter((zone) => zone.type === "campus")
-    .sort(
-      (a, b) =>
-        Number(b.university_id === user?.university_id) - Number(a.university_id === user?.university_id),
-    );
-  const neighborhoods = zones.filter((zone) => zone.type === "colonia");
-  const selected = location?.zone ?? null;
-
-  async function chooseZone(zone: Zone | null) {
-    if (busy || zone?.id === selected?.id) return;
-    setBusy("zone");
-    setMessage(null);
-    try {
-      setLocation(await setZone(zone?.id ?? null));
-    } catch (e) {
-      setMessage({ text: apiMessage(e, "No se pudo guardar tu zona."), danger: true });
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function turnOnNearby() {
-    setBusy("nearby");
+    setBusy(true);
     setMessage(null);
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
@@ -86,7 +58,7 @@ export default function LocationScreen() {
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const geohash = encodeGeohash(position.coords.latitude, position.coords.longitude);
       setLocation(await enableNearby(geohash));
-      setMessage({ text: "Listo. Apareces en Cerca de ti con tu zona aproximada." });
+      setMessage({ text: "Listo. Apareces en Cerca de ti con tu ubicación aproximada." });
     } catch (e) {
       setMessage({
         text:
@@ -96,12 +68,12 @@ export default function LocationScreen() {
         danger: true,
       });
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
   async function turnOffNearby() {
-    setBusy("nearby");
+    setBusy(true);
     setMessage(null);
     try {
       setLocation(await disableNearby());
@@ -109,7 +81,7 @@ export default function LocationScreen() {
     } catch (e) {
       setMessage({ text: apiMessage(e, "No se pudo apagar Cerca de ti."), danger: true });
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -130,7 +102,7 @@ export default function LocationScreen() {
           />
         </Pressable>
         <ThemedText type="heading" numberOfLines={1} accessibilityRole="header" style={styles.flex}>
-          Zona y Cerca de ti
+          Cerca de ti
         </ThemedText>
       </View>
 
@@ -148,7 +120,7 @@ export default function LocationScreen() {
                   <Button
                     title="Reintentar"
                     variant="secondary"
-                    onPress={() => void loadLocation({ withZones: true })}
+                    onPress={() => void loadLocation()}
                   />
                 </>
               )}
@@ -158,38 +130,6 @@ export default function LocationScreen() {
               <ThemedText type="small" themeColor="textSecondary">
                 Ayuda a que te encuentren estudiantes cerca de ti, sin mostrar dónde estás.
               </ThemedText>
-
-              <Card style={styles.card}>
-                <CardHeader
-                  icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
-                  title="Tu zona"
-                  subtitle={selected ? selected.name : "Sin zona elegida"}
-                  trailing={busy === "zone" ? <ActivityIndicator color={theme.accent} /> : undefined}
-                />
-                <ThemedText type="small" themeColor="textSecondary">
-                  Elige tu campus o tu colonia. Se muestra en tu perfil y en el mapa de Cerca.
-                </ThemedText>
-
-                {zones.length === 0 ? (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Todavía no hay zonas disponibles. Intenta más tarde.
-                  </ThemedText>
-                ) : (
-                  <>
-                    <ZoneGroup title="Campus" zones={campuses} selectedId={selected?.id} onChoose={chooseZone} />
-                    <ZoneGroup title="Colonias" zones={neighborhoods} selectedId={selected?.id} onChoose={chooseZone} />
-                  </>
-                )}
-
-                {selected && (
-                  <Button
-                    title="Quitar mi zona"
-                    variant="ghost"
-                    disabled={busy !== null}
-                    onPress={() => void chooseZone(null)}
-                  />
-                )}
-              </Card>
 
               <Card highlighted={location.nearby_enabled} style={styles.card}>
                 <CardHeader
@@ -208,14 +148,14 @@ export default function LocationScreen() {
                       title="Actualizar mi ubicación"
                       variant="secondary"
                       icon={{ ios: "arrow.clockwise", android: "refresh", web: "refresh" }}
-                      loading={busy === "nearby"}
-                      disabled={busy !== null}
+                      loading={busy}
+                      disabled={busy}
                       onPress={() => void turnOnNearby()}
                     />
                     <Button
                       title="Apagar Cerca de ti"
                       variant="ghost"
-                      disabled={busy !== null}
+                      disabled={busy}
                       onPress={() => void turnOffNearby()}
                     />
                   </>
@@ -231,7 +171,7 @@ export default function LocationScreen() {
                       />
                       <Point
                         icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
-                        text="En el mapa apareces en el centro de tu zona, no donde estás."
+                        text="En el mapa apareces cerca de tu celda, movido unos cientos de metros, nunca en tu ubicación exacta."
                       />
                       <Point
                         icon={{ ios: "trash", android: "delete", web: "delete" }}
@@ -241,8 +181,8 @@ export default function LocationScreen() {
                     <Button
                       title="Activar Cerca de ti"
                       icon={{ ios: "location", android: "near_me", web: "near_me" }}
-                      loading={busy === "nearby"}
-                      disabled={busy !== null}
+                      loading={busy}
+                      disabled={busy}
                       onPress={() => void turnOnNearby()}
                     />
                   </>
@@ -293,33 +233,6 @@ function CardHeader({
         </ThemedText>
       </View>
       {trailing}
-    </View>
-  );
-}
-
-function ZoneGroup({
-  title,
-  zones,
-  selectedId,
-  onChoose,
-}: {
-  title: string;
-  zones: Zone[];
-  selectedId: number | undefined;
-  onChoose: (zone: Zone) => void;
-}) {
-  if (zones.length === 0) return null;
-
-  return (
-    <View style={styles.group}>
-      <ThemedText type="caption" themeColor="textSecondary">
-        {title.toUpperCase()}
-      </ThemedText>
-      <View style={styles.chips}>
-        {zones.map((zone) => (
-          <Chip key={zone.id} label={zone.name} selected={zone.id === selectedId} onPress={() => onChoose(zone)} />
-        ))}
-      </View>
     </View>
   );
 }
@@ -409,14 +322,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: "center",
     justifyContent: "center",
-  },
-  group: {
-    gap: Spacing.two,
-  },
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.two,
   },
   pill: {
     paddingHorizontal: Spacing.two,

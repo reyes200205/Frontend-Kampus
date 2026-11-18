@@ -4,23 +4,22 @@ import { forwardRef } from 'react';
 import { Pressable, StyleSheet, Text, View, type PressableInstance } from 'react-native';
 
 import { KampusLogo } from '@/components/kampus-logo';
-import { TabItems } from '@/constants/navigation';
+import type { NavTab } from '@/constants/navigation';
 import { FontFamily, MinTouchSize, Radius, SidebarWidth, Spacing } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useUnreadChatsCount } from '@/hooks/use-chat';
-import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 
+import type { NavTabsProps } from './nav-tabs';
+
 /**
- * Navegación principal en web: barra inferior en pantallas angostas y
- * barra lateral izquierda en escritorio (anteproyecto 12.2).
+ * Navegación en web: barra inferior en pantallas angostas y barra lateral izquierda en escritorio
+ * (anteproyecto 12.2). La usan la app del estudiante y el panel de gestión; las pestañas con
+ * `hidden` no se muestran.
  */
-export default function AppTabs() {
+export function NavTabs({ items, sidebarTitle }: NavTabsProps) {
   const theme = useTheme();
   const { isDesktop } = useBreakpoint();
-  const { user } = useSession();
-  // Conversaciones con mensajes sin leer (T-16): se muestra en la pestaña Chats.
-  const unread = useUnreadChatsCount(user?.id ?? 0);
+  const visible = items.filter((item: NavTab) => !item.hidden);
 
   return (
     <Tabs style={[styles.root, isDesktop && styles.rootDesktop, { backgroundColor: theme.background }]}>
@@ -34,16 +33,14 @@ export default function AppTabs() {
         {isDesktop && (
           <View style={styles.sidebarLogo}>
             <KampusLogo size={28} layout="inline" />
+            {sidebarTitle && (
+              <Text style={[styles.sidebarTitle, { color: theme.textSecondary }]}>{sidebarTitle}</Text>
+            )}
           </View>
         )}
-        {TabItems.map((item) => (
+        {visible.map((item) => (
           <TabTrigger key={item.name} name={item.name} href={item.href} asChild>
-            <TabButton
-              icon={item.md}
-              label={item.label}
-              desktop={isDesktop}
-              badge={item.name === 'chats' ? unread : 0}
-            />
+            <TabButton icon={item.md} label={item.label} desktop={isDesktop} badge={item.badge ?? 0} />
           </TabTrigger>
         ))}
       </TabList>
@@ -137,8 +134,15 @@ const styles = StyleSheet.create({
   },
   sidebarLogo: {
     alignItems: 'flex-start',
+    gap: Spacing.one,
     paddingHorizontal: Spacing.two,
     marginBottom: Spacing.four,
+  },
+  sidebarTitle: {
+    fontSize: 12,
+    fontFamily: FontFamily.semibold,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   sidebarItem: {
     flexDirection: 'row',

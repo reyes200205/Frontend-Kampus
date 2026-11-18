@@ -1,18 +1,11 @@
-/**
- * Dominios de correo institucional aceptados en el registro.
- * TODO: confirmar los dominios exactos de cada institución.
- */
-export const AllowedEmailDomains = [
-  "utt.edu.mx",
-  "uadec.edu.mx",
-  "lalaguna.tecnm.mx",
-];
-
 export const MinPasswordLength = 8;
 
-export function isInstitutionalEmail(email: string) {
-  const domain = email.trim().toLowerCase().split("@")[1];
-  return !!domain && AllowedEmailDomains.includes(domain);
+/**
+ * Solo revisa que el texto tenga forma de correo. Si el dominio es institucional lo decide el
+ * backend (tabla `universities`), que responde 422 con el mensaje para el campo `email`.
+ */
+export function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 /**

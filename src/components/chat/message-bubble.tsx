@@ -5,7 +5,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { ImageViewer } from "@/components/chat/image-viewer";
 import { ThemedText } from "@/components/themed-text";
+import { bubbleColors } from "@/constants/chat-style";
 import { Radius, Spacing } from "@/constants/theme";
+import { useChatStyle } from "@/hooks/use-chat-style";
 import { useTheme } from "@/hooks/use-theme";
 import type { ChatMessage } from "@/types/chat";
 
@@ -35,6 +37,8 @@ function imageHeight(aspect: number) {
 /** Burbuja de un mensaje: a la derecha con el color de marca si es propio, a la izquierda si no. */
 export function MessageBubble({ message, mine, showStatus, onRetry }: MessageBubbleProps) {
   const theme = useTheme();
+  // Color elegido en Perfil → Apariencia → Estilo predeterminado del chat.
+  const own = bubbleColors(useChatStyle().bubble, theme);
   const [viewing, setViewing] = useState(false);
   const [imageError, setImageError] = useState(false);
   const failed = message.pending === "failed";
@@ -69,7 +73,7 @@ export function MessageBubble({ message, mine, showStatus, onRetry }: MessageBub
         style={[
           styles.bubble,
           mine
-            ? { backgroundColor: theme.accent, borderBottomRightRadius: Radius.small / 2 }
+            ? { backgroundColor: own.background, borderBottomRightRadius: Radius.small / 2 }
             : {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
@@ -122,18 +126,19 @@ export function MessageBubble({ message, mine, showStatus, onRetry }: MessageBub
           <ThemedText
             type="small"
             selectable
-            style={[mine && { color: theme.onAccent }, isImage && styles.caption]}
+            style={[
+              mine && { color: own.text },
+              isImage && styles.caption,
+              // Mensajes del sistema (p. ej. llamadas) en cursiva; el pie de una imagen no.
+              message.type !== "text" && !isImage && styles.italic,
+            ]}
           >
             {body}
           </ThemedText>
         ) : null}
         <ThemedText
           type="caption"
-          style={[
-            styles.time,
-            isImage && styles.caption,
-            { color: mine ? theme.onAccent : theme.textSecondary },
-          ]}
+          style={[styles.time, isImage && styles.caption, { color: mine ? own.text : theme.textSecondary }]}
         >
           {messageTime(message.created_at)}
         </ThemedText>
@@ -204,6 +209,9 @@ const styles = StyleSheet.create({
   },
   caption: {
     paddingHorizontal: Spacing.two,
+  },
+  italic: {
+    fontStyle: "italic",
   },
   time: {
     alignSelf: "flex-end",

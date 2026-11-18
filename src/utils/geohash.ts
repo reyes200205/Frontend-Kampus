@@ -42,3 +42,28 @@ export function encodeGeohash(latitude: number, longitude: number, precision = N
 
   return hash;
 }
+
+/**
+ * Centro de una celda. Sirve para centrar el mapa de Cerca en la celda propia; nunca se usa con la celda
+ * de otra persona (la API no la manda).
+ */
+export function geohashCenter(hash: string): { lat: number; lng: number } {
+  const latRange = [-90, 90];
+  const lngRange = [-180, 180];
+  let evenBit = true;
+
+  for (const char of hash) {
+    const value = Base32.indexOf(char);
+    if (value === -1) throw new Error(`Geohash inválido: ${hash}`);
+
+    for (let bit = 4; bit >= 0; bit--) {
+      const range = evenBit ? lngRange : latRange;
+      const middle = (range[0] + range[1]) / 2;
+      if ((value >> bit) & 1) range[0] = middle;
+      else range[1] = middle;
+      evenBit = !evenBit;
+    }
+  }
+
+  return { lat: (latRange[0] + latRange[1]) / 2, lng: (lngRange[0] + lngRange[1]) / 2 };
+}

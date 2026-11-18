@@ -24,6 +24,8 @@ export type ButtonProps = Omit<PressableProps, "style"> & {
   variant?: ButtonVariant;
   /** Ícono a la izquierda del texto. */
   icon?: SymbolViewProps["name"];
+  /** `small`: más bajo, para filas de tablas y barras de herramientas. */
+  size?: "default" | "small";
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
 };
@@ -31,6 +33,7 @@ export type ButtonProps = Omit<PressableProps, "style"> & {
 export function Button({
   title,
   variant = "primary",
+  size = "default",
   icon,
   loading,
   disabled,
@@ -55,7 +58,8 @@ export function Button({
       accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       style={({ pressed }) => [
         styles.button,
-        variant === "primary" && styles.primaryShadow,
+        size === "small" && styles.small,
+        variant === "primary" && size === "default" && styles.primaryShadow,
         variantStyle,
         pressed && styles.pressed,
         isDisabled && styles.disabled,
@@ -67,8 +71,8 @@ export function Button({
         <ActivityIndicator color={contentColor} />
       ) : (
         <>
-          {icon && <SymbolView name={icon} size={18} tintColor={contentColor} />}
-          <Text style={[styles.title, { color: contentColor }]}>{title}</Text>
+          {icon && <SymbolView name={icon} size={size === "small" ? 16 : 18} tintColor={contentColor} />}
+          <Text style={[styles.title, size === "small" && styles.titleSmall, { color: contentColor }]}>{title}</Text>
         </>
       )}
     </Pressable>
@@ -84,6 +88,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.two,
+  },
+  small: {
+    minHeight: 36,
+    paddingHorizontal: Spacing.three - 2,
+    gap: Spacing.one + 2,
   },
   primaryShadow: {
     shadowOffset: { width: 0, height: 8 },
@@ -101,5 +110,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.body,
     fontFamily: FontFamily.semibold,
+  },
+  titleSmall: {
+    fontSize: FontSize.small,
   },
 });

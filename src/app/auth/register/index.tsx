@@ -9,7 +9,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
-import { capitalizeWords, isInstitutionalEmail, MinPasswordLength } from "@/constants/auth";
+import { capitalizeWords, isValidEmail, MinPasswordLength } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
 import { ApiError } from "@/services/api";
 import { register } from "@/services/auth";
@@ -33,8 +33,7 @@ export default function RegisterScreen() {
     const next: FormErrors = {};
     if (!firstName.trim()) next.firstName = "Ingresa tu nombre";
     if (!lastName.trim()) next.lastName = "Ingresa tu apellido";
-    if (!isInstitutionalEmail(email))
-      next.email = "Usa tu correo institucional de la UTT, la UAdeC o el Tec Laguna.";
+    if (!isValidEmail(email)) next.email = "Ingresa un correo válido";
     if (password.length < MinPasswordLength)
       next.password = `Usa mínimo ${MinPasswordLength} caracteres`;
     if (!acceptedPrivacy || !acceptedGuidelines)

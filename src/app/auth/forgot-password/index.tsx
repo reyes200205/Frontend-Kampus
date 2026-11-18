@@ -8,7 +8,7 @@ import { CheckEmailCard } from "@/components/auth/check-email-card";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
-import { isInstitutionalEmail } from "@/constants/auth";
+import { isValidEmail } from "@/constants/auth";
 import { Spacing } from "@/constants/theme";
 import { ApiError } from "@/services/api";
 import { forgotPassword } from "@/services/auth";
@@ -34,8 +34,8 @@ export default function ForgotPasswordScreen() {
   const [resendNote, setResendNote] = useState<string | undefined>();
 
   async function handleSend() {
-    if (!isInstitutionalEmail(email)) {
-      setError("Usa tu correo institucional de la UTT, la UAdeC o el Tec Laguna.");
+    if (!isValidEmail(email)) {
+      setError("Ingresa un correo válido");
       return;
     }
     setError(undefined);
