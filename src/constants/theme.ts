@@ -19,6 +19,8 @@ const BaseColors = {
     placeholder: "#71717A",
     border: "#E4E4E7",
     danger: "#D93036",
+    /** Estados correctos (cuenta activa, grupo aprobado). */
+    success: "#15803D",
   },
   dark: {
     /** Texto principal: 18.7:1 sobre `background`. */
@@ -35,6 +37,8 @@ const BaseColors = {
     placeholder: "#8B8B94",
     border: "#2C2C33",
     danger: "#FF6B6B",
+    /** Estados correctos (cuenta activa, grupo aprobado): 8.6:1 sobre `background`. */
+    success: "#4ADE80",
   },
 };
 
