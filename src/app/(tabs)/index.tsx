@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { FiltersPanel, countActiveFilters } from "@/components/discover/filters-panel";
 import { SwipeDeck } from "@/components/discover/swipe-deck";
+import { KampusMap } from "@/components/map/kampus-map";
 import { MatchModal } from "@/components/matches/match-modal";
 import { Screen } from "@/components/layout/screen";
 import { ThemedText } from "@/components/themed-text";
@@ -29,6 +30,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
 import { EmptyFilters, getDiscoveryFilters, saveDiscoveryFilters } from "@/services/discovery";
 import { getInterests } from "@/services/profile";
+import { geohashCenter } from "@/utils/geohash";
 import type { DiscoveryFilters } from "@/types/discovery";
 import type { Interest } from "@/types/profile";
 
@@ -42,6 +44,7 @@ const FiltersPanelWidth = 320;
  */
 const ReservedHeight = Platform.OS === "web" ? 342 : 282 + BottomTabInset;
 const MinCardHeight = 320;
+const MinMapHeight = 360;
 /** Proporción máxima alto/ancho de la tarjeta: más alta que ancha para que la foto luzca (T-31). */
 const MaxCardRatio = 1.6;
 
@@ -152,11 +155,14 @@ type Discovery = ReturnType<typeof useDiscovery>;
 
 /**
  * Modo "Cerca". Si el alumno no ha activado "Cerca de ti", se lo recuerda con un botón que lo lleva a
- * activarlo (T-36). Con "Cerca de ti" activo, aquí irá el mapa por zonas (T-30).
+ * activarlo (T-36). Con "Cerca de ti" activo muestra el mapa (T-29) centrado en su última celda.
  */
 function NearbyArea() {
   const theme = useTheme();
   const { location, loading, error } = useLocation();
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const mapHeight = Math.max(MinMapHeight, windowHeight - ReservedHeight - insets.top - insets.bottom);
 
   // Al volver de activarlo (o de apagarlo) en el perfil, el estado se actualiza.
   useFocusEffect(
@@ -188,19 +194,48 @@ function NearbyArea() {
       <EmptyState
         icon={{ ios: "location.slash", android: "location_off", web: "location_off" }}
         title="Activa Cerca de ti"
-        message="Para ver a quienes estudian en tu zona, primero comparte tu zona aproximada. Solo se comparte una celda de 1 km, nunca tu ubicación exacta."
+        message="Para ver a quienes estudian cerca, primero comparte tu ubicación aproximada. Solo se comparte una celda de 1 km, nunca tu ubicación exacta."
         action={{ title: "Activar Cerca de ti", onPress: () => router.push("/profile/location") }}
       />
     );
   }
 
-  // TODO (T-30): mapa por zonas en "Cerca".
+  // Activo pero sin celda guardada (p. ej. se borró): hay que volver a compartirla.
+  if (!location.geohash) {
+    return (
+      <EmptyState
+        icon={{ ios: "location.slash", android: "location_off", web: "location_off" }}
+        title="Actualiza tu ubicación"
+        message="No tenemos tu ubicación aproximada. Vuelve a compartirla para ver quién está cerca."
+        action={{ title: "Actualizar ubicación", onPress: () => router.push("/profile/location") }}
+      />
+    );
+  }
+
+  // El mapa se centra en la última celda de ~1 km que compartiste (solo tú la ves). La zona declarada ya
+  // no se usa en Cerca.
+  // TODO (T-30): avatares de quienes están cerca (GET /discover/nearby) con ficha rápida y distancia.
+  const center = geohashCenter(location.geohash);
+
   return (
-    <EmptyState
-      icon={{ ios: "map", android: "map", web: "map" }}
-      title="Gente cerca de ti"
-      message="Ya compartes tu zona. Muy pronto verás aquí en un mapa a quienes estudian cerca, sin mostrar nunca su ubicación exacta."
-    />
+    <View style={styles.nearby}>
+      <KampusMap
+        center={center}
+        markers={[{ id: "me", coordinate: center, label: "Tú" }]}
+        accessibilityLabel="Mapa de tu ubicación aproximada"
+        style={[styles.map, { height: mapHeight, borderColor: theme.border }]}
+      />
+      <View style={[styles.mapNotice, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <SymbolView
+          name={{ ios: "lock.fill", android: "lock", web: "lock" }}
+          size={16}
+          tintColor={theme.textSecondary}
+        />
+        <ThemedText type="caption" themeColor="textSecondary" style={styles.flex}>
+          Solo mostramos ubicaciones aproximadas, nunca la exacta de nadie.
+        </ThemedText>
+      </View>
+    </View>
   );
 }
 
@@ -398,6 +433,23 @@ const styles = StyleSheet.create({
   nearbyLoading: {
     flexGrow: 1,
     paddingVertical: Spacing.six,
+  },
+  nearby: {
+    gap: Spacing.three,
+  },
+  map: {
+    borderRadius: Radius.large,
+    borderWidth: 1,
+  },
+  mapNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.full,
+    borderWidth: 1,
   },
   notice: {
     flexDirection: "row",

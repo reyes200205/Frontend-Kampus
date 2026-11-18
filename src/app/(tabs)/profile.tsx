@@ -75,9 +75,7 @@ export default function ProfileScreen() {
   }
 
   const details = data.profile;
-  const locationSummary = location
-    ? [location.zone?.name ?? "Sin zona", location.nearby_enabled ? "Cerca de ti activo" : "Cerca de ti apagado"].join(" · ")
-    : undefined;
+  const locationSummary = location ? (location.nearby_enabled ? "Activo" : "Apagado") : undefined;
   const photos = details?.photos ?? [];
   const interests = details?.interests ?? [];
   const age = ageFromBirthdate(details?.birthdate ?? null);
@@ -165,7 +163,7 @@ export default function ProfileScreen() {
             <MenuGroup>
               <MenuRow
                 icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
-                label="Zona y Cerca de ti"
+                label="Cerca de ti"
                 value={locationSummary}
                 onPress={() => router.push("/profile/location")}
               />
