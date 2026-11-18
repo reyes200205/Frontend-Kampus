@@ -76,7 +76,7 @@ export default function ProfileScreen() {
 
   const details = data.profile;
   const locationSummary = location
-    ? [location.zone?.name ?? "Sin zona", location.nearby_enabled ? "Cerca de ti activo" : "Cerca de ti apagado"].join(" · ")
+    ? location.nearby_enabled ? "Activo" : "Apagado"
     : undefined;
   const photos = details?.photos ?? [];
   const interests = details?.interests ?? [];
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
             <Card style={styles.menu}>
               <MenuRow
                 icon={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }}
-                label="Zona y Cerca de ti"
+                label="Cerca de ti"
                 value={locationSummary}
                 href="/profile/location"
               />
@@ -247,7 +247,7 @@ function MenuRow({
 }: {
   icon: SymbolViewProps["name"];
   label: string;
-  /** Dato corto debajo del texto (p. ej. la zona elegida). */
+  /** Dato corto debajo del texto (p. ej. si Cerca de ti está activo). */
   value?: string;
   href: Href;
 }) {

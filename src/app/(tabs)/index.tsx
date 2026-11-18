@@ -30,6 +30,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
 import { EmptyFilters, getDiscoveryFilters, saveDiscoveryFilters } from "@/services/discovery";
 import { getInterests } from "@/services/profile";
+import { geohashCenter } from "@/utils/geohash";
 import type { DiscoveryFilters } from "@/types/discovery";
 import type { Interest } from "@/types/profile";
 
@@ -154,7 +155,7 @@ type Discovery = ReturnType<typeof useDiscovery>;
 
 /**
  * Modo "Cerca". Si el alumno no ha activado "Cerca de ti", se lo recuerda con un botón que lo lleva a
- * activarlo (T-36). Con "Cerca de ti" activo, aquí irá el mapa por zonas (T-30).
+ * activarlo (T-36). Con "Cerca de ti" activo muestra el mapa (T-29) centrado en su última celda.
  */
 function NearbyArea() {
   const theme = useTheme();
@@ -193,32 +194,35 @@ function NearbyArea() {
       <EmptyState
         icon={{ ios: "location.slash", android: "location_off", web: "location_off" }}
         title="Activa Cerca de ti"
-        message="Para ver a quienes estudian en tu zona, primero comparte tu zona aproximada. Solo se comparte una celda de 1 km, nunca tu ubicación exacta."
+        message="Para ver a quienes estudian cerca, primero comparte tu ubicación aproximada. Solo se comparte una celda de 1 km, nunca tu ubicación exacta."
         action={{ title: "Activar Cerca de ti", onPress: () => router.push("/profile/location") }}
       />
     );
   }
 
-  const zone = location.zone;
-  if (!zone) {
+  // Activo pero sin celda guardada (p. ej. se borró): hay que volver a compartirla.
+  if (!location.geohash) {
     return (
       <EmptyState
-        icon={{ ios: "mappin.slash", android: "wrong_location", web: "wrong_location" }}
-        title="Elige tu zona"
-        message="Para mostrarte el mapa, primero elige tu campus o colonia."
-        action={{ title: "Elegir zona", onPress: () => router.push("/profile/location") }}
+        icon={{ ios: "location.slash", android: "location_off", web: "location_off" }}
+        title="Actualiza tu ubicación"
+        message="No tenemos tu ubicación aproximada. Vuelve a compartirla para ver quién está cerca."
+        action={{ title: "Actualizar ubicación", onPress: () => router.push("/profile/location") }}
       />
     );
   }
 
-  // TODO (T-30): avatares por zona con ficha rápida y distancia aproximada. Por ahora solo se marca
-  // el centro público de tu zona, nunca la ubicación de una persona (RNF-11).
+  // El mapa se centra en la última celda de ~1 km que compartiste (solo tú la ves). La zona declarada ya
+  // no se usa en Cerca.
+  // TODO (T-30): avatares de quienes están cerca (GET /discover/nearby) con ficha rápida y distancia.
+  const center = geohashCenter(location.geohash);
+
   return (
     <View style={styles.nearby}>
       <KampusMap
-        center={zone.center}
-        markers={[{ id: `zone-${zone.id}`, coordinate: zone.center, label: zone.name }]}
-        accessibilityLabel={`Mapa de tu zona, ${zone.name}`}
+        center={center}
+        markers={[{ id: "me", coordinate: center, label: "Tú" }]}
+        accessibilityLabel="Mapa de tu ubicación aproximada"
         style={[styles.map, { height: mapHeight, borderColor: theme.border }]}
       />
       <View style={[styles.mapNotice, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -228,7 +232,7 @@ function NearbyArea() {
           tintColor={theme.textSecondary}
         />
         <ThemedText type="caption" themeColor="textSecondary" style={styles.flex}>
-          Solo mostramos zonas aproximadas, nunca la ubicación exacta de nadie.
+          Solo mostramos ubicaciones aproximadas, nunca la exacta de nadie.
         </ThemedText>
       </View>
     </View>
