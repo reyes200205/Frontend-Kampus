@@ -1,13 +1,18 @@
-/** Registro, sesión, verificación de correo y recuperación de contraseña (T-06 y T-45, RF-01 y RF-02). */
+/**
+ * Registro, sesión (con verificación en dos pasos), verificación de correo y recuperación de contraseña
+ * (T-06, T-45 y T-50; RF-01 y RF-02).
+ */
 
 import { apiRequest } from "@/services/api";
 import type { ApiResource, MessageResponse } from "@/types/api";
 import type {
+  AuthTokenResponse,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
+  TwoFactorLoginRequest,
   User,
   VerifyEmailParams,
 } from "@/types/auth";
@@ -18,6 +23,11 @@ export function register(body: RegisterRequest) {
 
 export function login(body: LoginRequest) {
   return apiRequest<LoginResponse>("/login", { method: "POST", body });
+}
+
+/** Segundo paso del login con la verificación en dos pasos activa (T-47): cambia el reto por el token. */
+export function loginTwoFactor(body: TwoFactorLoginRequest) {
+  return apiRequest<AuthTokenResponse>("/login/two-factor", { method: "POST", body });
 }
 
 export function logout() {
