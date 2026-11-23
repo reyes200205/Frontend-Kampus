@@ -1,60 +1,100 @@
-/**
- * API del panel de gestión (`/api/admin`, T-41 y T-42). El backend revisa el rol en cada ruta:
- * Staff es solo para administradores y la revisión de grupos para moderadores y administradores.
- */
+// Cliente de la API de administración (docs/backend/api/admin/*).
+import { signOut as endSession } from '@/hooks/use-session';
+import { ApiError, apiRequest } from '@/services/api';
 
-import { apiRequest } from "@/services/api";
-import type { ApiResource, Paginated } from "@/types/api";
-import type {
-  AdminGroup,
-  GroupFilter,
-  OfficialGroupCreate,
-  StaffCreate,
-  StaffMember,
-} from "@/types/admin";
+export type University = { id: number; name: string; short_name: string };
 
-// Grupos: cola de revisión, historial y grupos oficiales (T-42, RF-23).
+export type StaffMember = {
+  id: number;
+  name: string;
+  email: string;
+  role: 'moderator' | 'admin';
+  university: University | null;
+  active: boolean;
+  deactivated_at: string | null;
+  created_at: string;
+};
 
-export function getAdminGroups(status: GroupFilter, page = 1) {
-  return apiRequest<Paginated<AdminGroup>>(`/admin/groups?status=${status}&page=${page}`);
+export type GroupStatus = 'pending' | 'approved' | 'rejected';
+export type GroupCategory = 'deportivo' | 'cultural' | 'academico' | 'social';
+
+export type Group = {
+  id: number;
+  name: string;
+  description: string | null;
+  category: GroupCategory;
+  status: GroupStatus;
+  is_official: boolean;
+  image_url: string | null;
+  university: University | null;
+  creator?: { name: string } | null;
+  members_count: number;
+  rejection_reason?: string | null;
+  reviewed_by?: { name?: string } | string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+};
+
+export type Paginated<T> = {
+  data: T[];
+  meta: { current_page: number; last_page: number; total: number };
+};
+
+// Universidades vistas en las respuestas: la API no tiene catálogo.
+const known = new Map<number, University>();
+export const knownUniversities = () => Array.from(known.values());
+const learn = (u?: University | null) => {
+  if (u) known.set(u.id, u);
+};
+
+/** apiRequest del proyecto; si el token venció (401) cierra la sesión y las rutas redirigen al login. */
+async function call<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  try {
+    return await apiRequest<T>(path, { method, body });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) endSession();
+    throw e;
+  }
 }
 
-export function approveGroup(groupId: number) {
-  return apiRequest<ApiResource<AdminGroup>>(`/admin/groups/${groupId}/approve`, {
-    method: "POST",
-  }).then((res) => res.data);
+export const logoutRequest = () => apiRequest<null>('/logout', { method: 'POST' });
+
+// ---- Staff (solo admin) ----
+export async function listStaff(page: number) {
+  const r = await call<Paginated<StaffMember>>(`/admin/staff?page=${page}`);
+  r.data.forEach((s) => learn(s.university));
+  return r;
 }
 
-/** El motivo es obligatorio y lo ve quien creó el grupo. */
-export function rejectGroup(groupId: number, reason: string) {
-  return apiRequest<ApiResource<AdminGroup>>(`/admin/groups/${groupId}/reject`, {
-    method: "POST",
-    body: { reason },
-  }).then((res) => res.data);
+export type NewStaff = {
+  name: string;
+  email: string;
+  role: 'moderator' | 'admin';
+  university_id?: number | null;
+  password: string;
+  password_confirmation: string;
+  reason: string;
+};
+export const createStaff = (body: NewStaff) => call('/admin/staff', 'POST', body);
+
+export const setStaffActive = (id: number, active: boolean, reason: string) =>
+  call(`/admin/staff/${id}`, 'PATCH', { active, reason });
+
+// ---- Grupos ----
+export async function listGroups(status: GroupStatus, page: number) {
+  const r = await call<Paginated<Group>>(`/admin/groups?status=${status}&page=${page}`);
+  r.data.forEach((g) => learn(g.university));
+  return r;
 }
 
-export function createOfficialGroup(body: OfficialGroupCreate) {
-  return apiRequest<ApiResource<AdminGroup>>("/admin/groups", { method: "POST", body }).then(
-    (res) => res.data,
-  );
-}
+export const reviewGroup = (id: number, approve: boolean, reason?: string) =>
+  call(`/admin/groups/${id}/${approve ? 'approve' : 'reject'}`, 'POST', reason ? { reason } : {});
 
-// Staff: alta, desactivación y reactivación (T-41, RF-22). Solo administradores.
-
-export function getStaff(page = 1) {
-  return apiRequest<Paginated<StaffMember>>(`/admin/staff?page=${page}`);
-}
-
-export function createStaff(body: StaffCreate) {
-  return apiRequest<ApiResource<StaffMember>>("/admin/staff", { method: "POST", body }).then(
-    (res) => res.data,
-  );
-}
-
-/** `active: false` desactiva la cuenta (y cierra sus sesiones); `true` la reactiva. */
-export function setStaffActive(staffId: number, active: boolean, reason: string) {
-  return apiRequest<ApiResource<StaffMember>>(`/admin/staff/${staffId}`, {
-    method: "PATCH",
-    body: { active, reason },
-  }).then((res) => res.data);
-}
+export type NewOfficialGroup = {
+  name: string;
+  description?: string;
+  category: GroupCategory;
+  university_id?: number | null;
+  admin_user_id?: number;
+};
+export const createOfficialGroup = (body: NewOfficialGroup) => call('/admin/groups', 'POST', body);
