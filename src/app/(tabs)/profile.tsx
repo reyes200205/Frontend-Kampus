@@ -173,6 +173,11 @@ export default function ProfileScreen() {
                 onPress={() => router.push("/profile/appearance")}
               />
               <MenuRow
+                icon={{ ios: "lock", android: "lock", web: "lock" }}
+                label="Seguridad"
+                onPress={() => router.push("/profile/security")}
+              />
+              <MenuRow
                 icon={{ ios: "lock.shield", android: "shield", web: "shield" }}
                 label="Aviso de privacidad"
                 onPress={() => router.push("/legal/privacy")}

@@ -76,6 +76,7 @@ export default function RootLayout() {
           <Stack.Screen name="profile/location" />
           <Stack.Screen name="profile/appearance" />
           <Stack.Screen name="profile/chat-style" />
+          <Stack.Screen name="profile/security" />
           <Stack.Screen name="chat/[matchId]" />
           <Stack.Screen name="call/[matchId]" options={{ gestureEnabled: false, animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
