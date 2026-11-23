@@ -178,14 +178,9 @@ export default function ProfileScreen() {
                 onPress={() => router.push("/profile/security")}
               />
               <MenuRow
-                icon={{ ios: "lock.shield", android: "shield", web: "shield" }}
-                label="Aviso de privacidad"
-                onPress={() => router.push("/legal/privacy")}
-              />
-              <MenuRow
-                icon={{ ios: "person.2", android: "diversity_3", web: "diversity_3" }}
-                label="Normas de comunidad"
-                onPress={() => router.push("/legal/guidelines")}
+                icon={{ ios: "doc.text", android: "description", web: "description" }}
+                label="Privacidad y normas"
+                onPress={() => router.push("/profile/legal")}
               />
             </MenuGroup>
 
