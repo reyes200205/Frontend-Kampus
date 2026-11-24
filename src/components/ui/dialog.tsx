@@ -1,5 +1,5 @@
 import { SymbolView } from "expo-symbols";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ComponentRef, type ReactNode } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -29,6 +29,41 @@ export type DialogProps = {
   maxWidth?: number;
 };
 
+/**
+ * En web, al abrir el teclado del celular solo queda a la vista el espacio de arriba y el navegador no siempre
+ * desplaza el área con scroll del diálogo hasta el campo enfocado (en iPhone se quedaba tapado). Cuando el teclado
+ * termina de abrir, se lleva el campo enfocado a la vista dentro del diálogo.
+ */
+function useRevealFocusedField(visible: boolean) {
+  const panelRef = useRef<ComponentRef<typeof View>>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || !visible) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const reveal = () => {
+      const panel = panelRef.current as unknown as HTMLElement | null;
+      const field = document.activeElement;
+      if (panel && field instanceof HTMLElement && panel.contains(field)) {
+        field.scrollIntoView({ block: "nearest" });
+      }
+    };
+    // El teclado tarda en abrir; antes de eso el campo todavía está a la vista.
+    const onFocusIn = () => {
+      clearTimeout(timer);
+      timer = setTimeout(reveal, 350);
+    };
+    document.addEventListener("focusin", onFocusIn);
+    window.visualViewport?.addEventListener("resize", reveal);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("focusin", onFocusIn);
+      window.visualViewport?.removeEventListener("resize", reveal);
+    };
+  }, [visible]);
+
+  return panelRef;
+}
+
 /** Ventana encima de la pantalla para confirmar una acción o llenar un formulario corto. */
 export function Dialog({
   visible,
@@ -41,6 +76,7 @@ export function Dialog({
   maxWidth = 480,
 }: DialogProps) {
   const theme = useTheme();
+  const panelRef = useRevealFocusedField(visible);
   const close = () => {
     if (!busy) onClose();
   };
@@ -59,48 +95,49 @@ export function Dialog({
             accessibilityLabel="Cerrar"
           />
           <View
+            ref={panelRef}
             accessibilityViewIsModal
             style={[
               styles.panel,
               { maxWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border },
             ]}
           >
-            <View style={styles.header}>
-              <View style={styles.flex}>
-                <ThemedText type="heading" accessibilityRole="header">
-                  {title}
-                </ThemedText>
-                {description && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {description}
+            {/* Título, descripción y campos van juntos en el área con scroll; los botones quedan fijos abajo.
+                Así, con el teclado abierto y poco espacio, el campo no queda escondido detrás del encabezado. */}
+            <ScrollView
+              style={styles.body}
+              contentContainerStyle={[styles.bodyContent, !children && styles.bodyContentEmpty]}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.header}>
+                <View style={styles.flex}>
+                  <ThemedText type="heading" accessibilityRole="header">
+                    {title}
                   </ThemedText>
-                )}
+                  {description && (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {description}
+                    </ThemedText>
+                  )}
+                </View>
+                <Pressable
+                  onPress={close}
+                  disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cerrar"
+                  hitSlop={Spacing.two}
+                  style={({ pressed }) => [styles.close, pressed && { backgroundColor: theme.backgroundSelected }]}
+                >
+                  <SymbolView
+                    name={{ ios: "xmark", android: "close", web: "close" }}
+                    size={20}
+                    tintColor={theme.textSecondary}
+                  />
+                </Pressable>
               </View>
-              <Pressable
-                onPress={close}
-                disabled={busy}
-                accessibilityRole="button"
-                accessibilityLabel="Cerrar"
-                hitSlop={Spacing.two}
-                style={({ pressed }) => [styles.close, pressed && { backgroundColor: theme.backgroundSelected }]}
-              >
-                <SymbolView
-                  name={{ ios: "xmark", android: "close", web: "close" }}
-                  size={20}
-                  tintColor={theme.textSecondary}
-                />
-              </Pressable>
-            </View>
 
-            {children && (
-              <ScrollView
-                style={styles.body}
-                contentContainerStyle={styles.bodyContent}
-                keyboardShouldPersistTaps="handled"
-              >
-                {children}
-              </ScrollView>
-            )}
+              {children && <View style={styles.content}>{children}</View>}
+            </ScrollView>
 
             {footer && <View style={[styles.footer, { borderColor: theme.border }]}>{footer}</View>}
           </View>
@@ -134,7 +171,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: Spacing.three,
-    padding: Spacing.four,
+    paddingTop: Spacing.four,
     paddingBottom: Spacing.three,
   },
   close: {
@@ -146,10 +183,16 @@ const styles = StyleSheet.create({
   },
   body: {
     flexGrow: 0,
+    flexShrink: 1,
   },
   bodyContent: {
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.four,
+  },
+  bodyContentEmpty: {
+    paddingBottom: 0,
+  },
+  content: {
     gap: Spacing.four,
   },
   footer: {
