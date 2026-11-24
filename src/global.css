@@ -13,3 +13,14 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+
+/*
+ * Fondo de la página detrás de la app. Sin esto el navegador lo deja blanco, y en el celular se ve una franja blanca
+ * entre la app y el teclado (o la barra de autollenado) al escribir, y al estirar la página en los bordes.
+ * Es el `background` del tema oscuro en `src/constants/theme.ts`; si cambia el tema activo, cámbialo aquí también.
+ */
+html,
+body {
+  background-color: #121215;
+  color-scheme: dark;
+}
