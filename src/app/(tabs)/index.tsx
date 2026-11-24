@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useEffect, useState } from "react";
@@ -14,6 +15,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FiltersPanel, countActiveFilters } from "@/components/discover/filters-panel";
+import { firstName } from "@/components/discover/swipe-card";
 import { SwipeDeck } from "@/components/discover/swipe-deck";
 import { NearbyMap } from "@/components/discover/nearby-map";
 import { MatchModal } from "@/components/matches/match-modal";
@@ -22,9 +24,12 @@ import { ThemedText } from "@/components/themed-text";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Universities } from "@/constants/management";
 import { BottomTabInset, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useDiscovery } from "@/hooks/use-discovery";
+import { useProfile } from "@/hooks/use-profile";
+import { useSession } from "@/hooks/use-session";
 import { loadLocation, useLocation } from "@/hooks/use-location";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/services/api";
@@ -39,10 +44,10 @@ type DiscoverMode = "for-you" | "nearby";
 const MaxCardWidth = 420;
 const FiltersPanelWidth = 320;
 /**
- * Alto que ocupan encabezado, selector, botones y barra de pestañas alrededor de la tarjeta, para
- * que los botones queden a la vista sin hacer scroll. En nativo la barra de pestañas va encima.
+ * Alto que ocupan saludo, selector, la parte de los botones que sale de la tarjeta y la barra de pestañas,
+ * para que los botones queden a la vista sin hacer scroll. En nativo la barra de pestañas va encima.
  */
-const ReservedHeight = Platform.OS === "web" ? 342 : 282 + BottomTabInset;
+const ReservedHeight = Platform.OS === "web" ? 272 : 212 + BottomTabInset;
 const MinCardHeight = 320;
 const MinMapHeight = 360;
 /** Proporción máxima alto/ancho de la tarjeta: más alta que ancha para que la foto luzca (T-31). */
@@ -103,7 +108,7 @@ export default function DiscoverScreen() {
   return (
     <Screen
       title="Descubrir"
-      subtitle="Tu campus, tu gente."
+      header={<Greeting />}
       action={
         mode === "for-you" && !isDesktop ? (
           <FiltersButton active={activeFilters} onPress={() => setFiltersOpen(true)} />
@@ -152,6 +157,41 @@ export default function DiscoverScreen() {
 }
 
 type Discovery = ReturnType<typeof useDiscovery>;
+
+/** Saludo de Descubrir (como el "Hello Damien!" de las apps de citas): foto, nombre de pila y universidad. */
+function Greeting() {
+  const theme = useTheme();
+  const { user } = useSession();
+  const { profile } = useProfile();
+  const photo = profile?.profile?.photos
+    ? [...profile.profile.photos].sort((a, b) => a.position - b.position)[0]?.temporary_url
+    : undefined;
+  const name = user?.name ?? "";
+  const university = Universities.find((item) => item.id === user?.university_id)?.short_name;
+
+  return (
+    <Pressable onPress={() => router.navigate("/profile")} accessibilityRole="link" style={styles.greeting}>
+      {photo ? (
+        <Image source={{ uri: photo }} style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]} contentFit="cover" />
+      ) : (
+        <View style={[styles.avatar, styles.center, { backgroundColor: theme.backgroundSelected }]}>
+          <ThemedText type="smallBold">{name.trim().charAt(0).toUpperCase() || "?"}</ThemedText>
+        </View>
+      )}
+      <View style={styles.flex}>
+        <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>
+          ¡Hola, {firstName(name) || "de nuevo"}!
+        </ThemedText>
+        <View style={styles.place}>
+          <SymbolView name={{ ios: "mappin.and.ellipse", android: "location_on", web: "location_on" }} size={14} tintColor={theme.accentText} />
+          <ThemedText type="smallBold" numberOfLines={1} style={styles.flex}>
+            {university ? `Descubre gente de ${university}` : "Descubre gente de tu campus"}
+          </ThemedText>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 
 /**
  * Modo "Cerca". Si el alumno no ha activado "Cerca de ti", se lo recuerda con un botón que lo lleva a
@@ -389,6 +429,21 @@ const styles = StyleSheet.create({
   modes: {
     flexDirection: "row",
     gap: Spacing.two,
+  },
+  greeting: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two + 4,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
+  },
+  place: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one,
   },
   forYou: {
     gap: Spacing.four,

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ActionButton } from "@/components/discover/action-button";
+import { ActionButton, LikeIcon } from "@/components/discover/action-button";
 import { PhotoBars } from "@/components/discover/photo-bars";
 import { sortedPhotos } from "@/components/discover/swipe-card";
 import { ThemedText } from "@/components/themed-text";
@@ -227,8 +227,8 @@ function Content({ card, onClose, onDecide }: Omit<ExpandedProfileProps, "card">
           onPress={() => onDecide(false)}
         />
         <ActionButton
-          label="Me interesa"
-          icon={{ ios: "heart.fill", android: "favorite", web: "favorite" }}
+          label="Like"
+          icon={LikeIcon}
           primary
           onPress={() => onDecide(true)}
         />
