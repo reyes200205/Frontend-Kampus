@@ -135,13 +135,14 @@ export const FontFamily = {
 } as const;
 
 /**
- * Escala tipográfica modular 1.25 (anteproyecto 15.3): base de 16 px, mínimo 12 px.
+ * Escala tipográfica: base de 16 px, mínimo 12 px. Los títulos se compactaron (antes 32/25/20, escala 1.25
+ * del anteproyecto 15.3) para acercarse al tamaño de apps como Facebook e Instagram en el celular.
  * `ThemedText` la usa en sus variantes (`title`, `subtitle`, `heading`, `default`, `small`, `caption`).
  */
 export const FontSize = {
-  h1: 32,
-  h2: 25,
-  h3: 20,
+  h1: 26,
+  h2: 20,
+  h3: 18,
   body: 16,
   small: 14,
   caption: 12,
