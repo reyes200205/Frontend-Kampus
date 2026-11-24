@@ -1,100 +1,107 @@
-// Cliente de la API de administración (docs/backend/api/admin/*).
-import { signOut as endSession } from '@/hooks/use-session';
-import { ApiError, apiRequest } from '@/services/api';
+/**
+ * API del panel de administración (`/api/admin`).
+ * Las rutas y cuerpos corresponden a backend-kampus, rama develop.
+ */
 
-export type University = { id: number; name: string; short_name: string };
+import { apiRequest } from "@/services/api";
+import type { ApiResource, Paginated } from "@/types/api";
+import type {
+  AdminGroup,
+  AdminReport,
+  AdminReportQuery,
+  AdminUser,
+  AdminUserModerationBody,
+  AdminUserQuery,
+  GroupFilter,
+  OfficialGroupCreate,
+  ReviewReportBody,
+  StaffCreate,
+  StaffMember,
+} from "@/types/admin";
 
-export type StaffMember = {
-  id: number;
-  name: string;
-  email: string;
-  role: 'moderator' | 'admin';
-  university: University | null;
-  active: boolean;
-  deactivated_at: string | null;
-  created_at: string;
-};
-
-export type GroupStatus = 'pending' | 'approved' | 'rejected';
-export type GroupCategory = 'deportivo' | 'cultural' | 'academico' | 'social';
-
-export type Group = {
-  id: number;
-  name: string;
-  description: string | null;
-  category: GroupCategory;
-  status: GroupStatus;
-  is_official: boolean;
-  image_url: string | null;
-  university: University | null;
-  creator?: { name: string } | null;
-  members_count: number;
-  rejection_reason?: string | null;
-  reviewed_by?: { name?: string } | string | null;
-  reviewed_at?: string | null;
-  created_at: string;
-};
-
-export type Paginated<T> = {
-  data: T[];
-  meta: { current_page: number; last_page: number; total: number };
-};
-
-// Universidades vistas en las respuestas: la API no tiene catálogo.
-const known = new Map<number, University>();
-export const knownUniversities = () => Array.from(known.values());
-const learn = (u?: University | null) => {
-  if (u) known.set(u.id, u);
-};
-
-/** apiRequest del proyecto; si el token venció (401) cierra la sesión y las rutas redirigen al login. */
-async function call<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-  try {
-    return await apiRequest<T>(path, { method, body });
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 401) endSession();
-    throw e;
-  }
+function queryString(values: Record<string, string | number | undefined>) {
+  const params = new URLSearchParams();
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  return query ? `?${query}` : "";
 }
 
-export const logoutRequest = () => apiRequest<null>('/logout', { method: 'POST' });
-
-// ---- Staff (solo admin) ----
-export async function listStaff(page: number) {
-  const r = await call<Paginated<StaffMember>>(`/admin/staff?page=${page}`);
-  r.data.forEach((s) => learn(s.university));
-  return r;
+// Grupos
+export function getAdminGroups(status: GroupFilter, page = 1) {
+  return apiRequest<Paginated<AdminGroup>>(`/admin/groups?status=${status}&page=${page}`);
+}
+export function approveGroup(groupId: number) {
+  return apiRequest<ApiResource<AdminGroup>>(`/admin/groups/${groupId}/approve`, { method: "POST" }).then((res) => res.data);
+}
+export function rejectGroup(groupId: number, reason: string) {
+  return apiRequest<ApiResource<AdminGroup>>(`/admin/groups/${groupId}/reject`, { method: "POST", body: { reason } }).then((res) => res.data);
+}
+export function createOfficialGroup(body: OfficialGroupCreate) {
+  return apiRequest<ApiResource<AdminGroup>>("/admin/groups", { method: "POST", body }).then((res) => res.data);
 }
 
-export type NewStaff = {
-  name: string;
-  email: string;
-  role: 'moderator' | 'admin';
-  university_id?: number | null;
-  password: string;
-  password_confirmation: string;
-  reason: string;
-};
-export const createStaff = (body: NewStaff) => call('/admin/staff', 'POST', body);
-
-export const setStaffActive = (id: number, active: boolean, reason: string) =>
-  call(`/admin/staff/${id}`, 'PATCH', { active, reason });
-
-// ---- Grupos ----
-export async function listGroups(status: GroupStatus, page: number) {
-  const r = await call<Paginated<Group>>(`/admin/groups?status=${status}&page=${page}`);
-  r.data.forEach((g) => learn(g.university));
-  return r;
+// Staff
+export function getStaff(page = 1) {
+  return apiRequest<Paginated<StaffMember>>(`/admin/staff?page=${page}`);
+}
+export function createStaff(body: StaffCreate) {
+  return apiRequest<ApiResource<StaffMember>>("/admin/staff", { method: "POST", body }).then((res) => res.data);
+}
+export function setStaffActive(staffId: number, active: boolean, reason: string) {
+  return apiRequest<ApiResource<StaffMember>>(`/admin/staff/${staffId}`, {
+    method: "PATCH",
+    body: { active, reason },
+  }).then((res) => res.data);
 }
 
-export const reviewGroup = (id: number, approve: boolean, reason?: string) =>
-  call(`/admin/groups/${id}/${approve ? 'approve' : 'reject'}`, 'POST', reason ? { reason } : {});
+// Usuarios (T-43 / RF-24)
+export function getAdminUsers(query: AdminUserQuery = {}, page = 1) {
+  return apiRequest<Paginated<AdminUser>>(
+    `/admin/users${queryString({
+      page,
+      search: query.search?.trim() || undefined,
+      status: query.status && query.status !== "all" ? query.status : "all",
+      role: query.role && query.role !== "all" ? query.role : undefined,
+      university_id: query.university_id && query.university_id !== "all" ? query.university_id : undefined,
+      sort: query.sort,
+    })}`,
+  );
+}
+export function getAdminUser(userId: number) {
+  return apiRequest<ApiResource<AdminUser>>(`/admin/users/${userId}`).then((res) => res.data);
+}
+export function suspendAdminUser(userId: number, body: AdminUserModerationBody) {
+  return apiRequest<ApiResource<AdminUser>>(`/admin/users/${userId}/suspend`, {
+    method: "POST",
+    body,
+  }).then((res) => res.data);
+}
+export function reactivateAdminUser(userId: number, reason: string) {
+  return apiRequest<ApiResource<AdminUser>>(`/admin/users/${userId}/reactivate`, {
+    method: "POST",
+    body: { reason },
+  }).then((res) => res.data);
+}
 
-export type NewOfficialGroup = {
-  name: string;
-  description?: string;
-  category: GroupCategory;
-  university_id?: number | null;
-  admin_user_id?: number;
-};
-export const createOfficialGroup = (body: NewOfficialGroup) => call('/admin/groups', 'POST', body);
+// Reportes (T-37 / RF-15)
+export function getAdminReports(query: AdminReportQuery = {}, page = 1) {
+  return apiRequest<Paginated<AdminReport>>(
+    `/admin/reports${queryString({
+      page,
+      status: query.status ?? "pending",
+      user_id: query.user_id,
+      reason: query.reason && query.reason !== "all" ? query.reason : undefined,
+    })}`,
+  );
+}
+export function getAdminReport(reportId: number) {
+  return apiRequest<ApiResource<AdminReport>>(`/admin/reports/${reportId}`).then((res) => res.data);
+}
+export function reviewAdminReport(reportId: number, body: ReviewReportBody) {
+  return apiRequest<ApiResource<AdminReport>>(`/admin/reports/${reportId}`, {
+    method: "PATCH",
+    body,
+  }).then((res) => res.data);
+}
