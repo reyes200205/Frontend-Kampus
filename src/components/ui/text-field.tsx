@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
+import { webNoOutline } from "@/components/ui/web-no-outline";
 import { FontFamily, FontSize, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -74,6 +75,7 @@ export function TextField({
             styles.input,
             rest.multiline && styles.inputMultiline,
             { color: theme.text },
+            webNoOutline,
             style,
           ]}
           {...rest}

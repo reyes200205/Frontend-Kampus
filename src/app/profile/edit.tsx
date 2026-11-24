@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { DateField } from "@/components/ui/date-field";
+import { CareerField } from "@/components/profile/career-field";
 import { TextField } from "@/components/ui/text-field";
 import {
   MaxBioLength,
-  MaxCareerLength,
   MaxSemester,
   latestBirthdate,
   MinInterests,
@@ -68,6 +68,7 @@ export default function EditProfileScreen() {
 }
 
 function EditProfileForm({ profile }: { profile: Profile }) {
+  const { user } = useSession();
   const details = profile.profile;
   const [name, setName] = useState(profile.user.name);
   const [career, setCareer] = useState(details?.career ?? "");
@@ -164,15 +165,11 @@ function EditProfileForm({ profile }: { profile: Profile }) {
           autoComplete="name"
           maxLength={255}
         />
-        <TextField
-          label="Carrera"
-          icon={{ ios: "graduationcap", android: "school", web: "school" }}
-          placeholder="Ej. Ingeniería en Software"
+        <CareerField
           value={career}
-          onChangeText={setCareer}
+          onChange={setCareer}
+          universityId={user?.university_id}
           error={errors.career}
-          autoCapitalize="sentences"
-          maxLength={MaxCareerLength}
         />
         <View style={styles.field}>
           <ThemedText type="small" style={styles.label}>
