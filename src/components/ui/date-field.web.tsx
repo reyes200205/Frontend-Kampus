@@ -64,7 +64,7 @@ export function DateField({
             background: "transparent",
             color: value ? theme.text : theme.placeholder,
             fontFamily: FontFamily.regular,
-            fontSize: FontSize.small,
+            fontSize: FontSize.input,
             // Calendario e ícono del navegador con el mismo modo (oscuro o claro) que la app.
             colorScheme: ActiveThemeMode,
             accentColor: theme.accent,

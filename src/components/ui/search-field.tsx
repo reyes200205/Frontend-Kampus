@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: "100%",
-    fontSize: FontSize.small,
+    fontSize: FontSize.input,
     fontFamily: FontFamily.regular,
     outlineWidth: 0,
   },

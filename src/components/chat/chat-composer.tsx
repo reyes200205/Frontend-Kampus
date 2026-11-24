@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderRadius: Radius.large,
     borderWidth: 1,
-    fontSize: FontSize.small,
+    fontSize: FontSize.input,
     fontFamily: FontFamily.regular,
     // En web el navegador dibuja su propio contorno al enfocar.
     outlineWidth: 0,
