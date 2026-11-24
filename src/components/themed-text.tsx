@@ -54,17 +54,17 @@ export function ThemedText({
 const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.h1,
-    lineHeight: 40,
+    lineHeight: 32,
     fontFamily: FontFamily.bold,
   },
   subtitle: {
     fontSize: FontSize.h2,
-    lineHeight: 32,
+    lineHeight: 26,
     fontFamily: FontFamily.semibold,
   },
   heading: {
     fontSize: FontSize.h3,
-    lineHeight: 28,
+    lineHeight: 24,
     fontFamily: FontFamily.semibold,
   },
   default: {
