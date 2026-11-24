@@ -15,6 +15,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 
+import { LikeIcon } from "@/components/discover/action-button";
 import { Avatar } from "@/components/matches/avatar";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
@@ -34,15 +35,16 @@ export type MatchModalProps = {
 const AvatarSize = 116;
 /** Distancia desde la que entran las fotos, una por cada lado. */
 const AvatarStart = 180;
-/** Corazones que salen disparados del centro cuando chocan las fotos. */
+/** Likes que salen disparados del centro cuando chocan las fotos. */
 const Particles = 10;
 const ParticleDistance = 150;
 /** Momento en que las dos fotos se juntan; lo demás se encadena a partir de aquí. */
 const ImpactMs = 420;
 
 /**
- * Pantalla "Es un match" (T-12, RF-07). Las dos fotos entran desde los lados y chocan en el centro,
- * aparece un corazón que late, salen corazones disparados y después el título y los botones.
+ * Pantalla "Es un match" (T-12, RF-07). Primero un Like grande salta al centro con un pequeño vaivén y se
+ * desvanece mientras las dos fotos entran desde los lados y chocan; ahí aparece el Like que late, salen
+ * Likes disparados y después el título y los botones.
  * Con "Reducir movimiento" activo en el sistema, todo aparece sin animación.
  */
 export function MatchModal({ match, onClose, onSeeMatches }: MatchModalProps) {
@@ -54,6 +56,8 @@ export function MatchModal({ match, onClose, onSeeMatches }: MatchModalProps) {
   const backdrop = useSharedValue(0);
   const avatars = useSharedValue(0);
   const heart = useSharedValue(0);
+  /** El Like grande del principio: entra (0 → 1) y se va (1 → 2) cuando chocan las fotos. */
+  const bigLike = useSharedValue(0);
   const pulse = useSharedValue(1);
   const burst = useSharedValue(0);
   const title = useSharedValue(0);
@@ -75,11 +79,20 @@ export function MatchModal({ match, onClose, onSeeMatches }: MatchModalProps) {
     if (reduceMotion) {
       [backdrop, avatars, heart, title, actions].forEach((value) => value.set(1));
       burst.set(1);
+      bigLike.set(2);
       return;
     }
 
-    [backdrop, avatars, heart, burst, title, actions].forEach((value) => value.set(0));
+    [backdrop, avatars, heart, burst, title, actions, bigLike].forEach((value) => value.set(0));
     pulse.set(1);
+
+    // Like grande: salta con resorte y, al chocar las fotos, crece un poco y se desvanece.
+    bigLike.set(
+      withSequence(
+        withSpring(1, { damping: 7, stiffness: 220 }),
+        withDelay(80, withTiming(2, { duration: 260, easing: Easing.in(Easing.cubic) })),
+      ),
+    );
 
     backdrop.set(withTiming(1, { duration: 250 }));
     avatars.set(withSpring(1, { damping: 11, stiffness: 120, mass: 0.9 }));
@@ -96,9 +109,22 @@ export function MatchModal({ match, onClose, onSeeMatches }: MatchModalProps) {
     );
     title.set(withDelay(ImpactMs + 150, withSpring(1, { damping: 9, stiffness: 140 })));
     actions.set(withDelay(ImpactMs + 450, withTiming(1, { duration: 320 })));
-  }, [match, reduceMotion, backdrop, avatars, heart, pulse, burst, title, actions]);
+  }, [match, reduceMotion, backdrop, avatars, heart, pulse, burst, title, actions, bigLike]);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdrop.get() }));
+  const bigLikeStyle = useAnimatedStyle(() => {
+    const value = bigLike.get();
+    const entering = Math.min(value, 1);
+    const leaving = Math.max(value - 1, 0);
+    return {
+      opacity: entering * (1 - leaving),
+      transform: [
+        { scale: entering * (1 + leaving * 0.6) },
+        // Vaivén del pulgar al entrar: de -25° a 0°.
+        { rotate: `${-25 * (1 - entering)}deg` },
+      ],
+    };
+  });
   const leftAvatarStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: (1 - avatars.get()) * -AvatarStart },
@@ -147,11 +173,17 @@ export function MatchModal({ match, onClose, onSeeMatches }: MatchModalProps) {
                 </Animated.View>
               </View>
 
+              <Animated.View pointerEvents="none" style={[styles.bigLike, bigLikeStyle]}>
+                <View style={[styles.bigLikeCircle, { backgroundColor: theme.accent }]}>
+                  <SymbolView name={LikeIcon} size={64} tintColor={theme.onAccent} />
+                </View>
+              </Animated.View>
+
               <Animated.View
                 style={[styles.heart, { backgroundColor: theme.accent, borderColor: theme.background }, heartStyle]}
               >
                 <SymbolView
-                  name={{ ios: "heart.fill", android: "favorite", web: "favorite" }}
+                  name={LikeIcon}
                   size={26}
                   tintColor={theme.onAccent}
                 />
@@ -190,7 +222,7 @@ export function MatchModal({ match, onClose, onSeeMatches }: MatchModalProps) {
   );
 }
 
-/** Un corazón pequeño que sale del centro en su propia dirección y se desvanece. */
+/** Un Like pequeño que sale del centro en su propia dirección y se desvanece. */
 function Particle({ index, progress, color }: { index: number; progress: SharedValue<number>; color: string }) {
   // Repartidos en círculo, con un poco de variación para que no se vea como reloj.
   const angle = (index / Particles) * Math.PI * 2 + (index % 2 === 0 ? 0.18 : -0.12);
@@ -211,7 +243,7 @@ function Particle({ index, progress, color }: { index: number; progress: SharedV
 
   return (
     <Animated.View pointerEvents="none" style={[styles.particle, style]}>
-      <SymbolView name={{ ios: "heart.fill", android: "favorite", web: "favorite" }} size={size} tintColor={color} />
+      <SymbolView name={LikeIcon} size={size} tintColor={color} />
     </Animated.View>
   );
 }
@@ -256,6 +288,17 @@ const styles = StyleSheet.create({
   },
   particle: {
     position: "absolute",
+  },
+  bigLike: {
+    position: "absolute",
+    zIndex: 3,
+  },
+  bigLikeCircle: {
+    width: 128,
+    height: 128,
+    borderRadius: Radius.full,
+    alignItems: "center",
+    justifyContent: "center",
   },
   texts: {
     gap: Spacing.two,

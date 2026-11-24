@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
-import { ActionButton } from "@/components/discover/action-button";
+import { ActionButton, LikeIcon } from "@/components/discover/action-button";
 import { ExpandedProfile } from "@/components/discover/expanded-profile";
 import { SwipeCard, type SwipeCardHandle } from "@/components/discover/swipe-card";
 import { Spacing } from "@/constants/theme";
 import type { DiscoveryCard } from "@/types/discovery";
+
+/** Cuánto suben los botones sobre la tarjeta (la mitad del botón de "Me interesa"). */
+export const OverlapHeight = 35;
 
 /** Tiempo para que el perfil expandido termine de cerrarse antes de lanzar la tarjeta. */
 const CloseBeforeFlingMs = 280;
@@ -79,16 +82,24 @@ export function SwipeDeck({ cards, width, height, onDecide }: SwipeDeckProps) {
         ))}
       </View>
 
+      {/* Los botones se montan sobre el borde de abajo de la tarjeta: la foto gana alto sin esconderlos. */}
       <View style={styles.actions}>
         <ActionButton
           label="Pasar"
+          tone="pass"
           icon={{ ios: "xmark", android: "close", web: "close" }}
           onPress={() => fling(false)}
         />
         <ActionButton
-          label="Me interesa"
-          icon={{ ios: "heart.fill", android: "favorite", web: "favorite" }}
-          primary
+          label="Ver perfil completo"
+          tone="info"
+          icon={{ ios: "chevron.up", android: "keyboard_arrow_up", web: "keyboard_arrow_up" }}
+          onPress={() => cards[0] && setExpanded(cards[0])}
+        />
+        <ActionButton
+          label="Like"
+          tone="like"
+          icon={LikeIcon}
           onPress={() => fling(true)}
         />
       </View>
@@ -105,12 +116,13 @@ export function SwipeDeck({ cards, width, height, onDecide }: SwipeDeckProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    gap: Spacing.three,
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.six - Spacing.two,
+    gap: Spacing.four,
+    // La mitad del botón grande queda sobre la tarjeta (que ya reserva ese espacio abajo).
+    marginTop: -(OverlapHeight + 14),
   },
 });

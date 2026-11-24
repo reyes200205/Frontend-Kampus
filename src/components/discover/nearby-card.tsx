@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 
+import { LikeIcon } from "@/components/discover/action-button";
 import { sortedPhotos } from "@/components/discover/swipe-card";
 import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
@@ -93,8 +94,8 @@ export function NearbyCard({ user, onOpenProfile, onDecide, onClose, style }: Ne
         />
         <Button title="Ver perfil" variant="secondary" onPress={onOpenProfile} style={styles.profileButton} />
         <RoundButton
-          label={`Me interesa ${user.name}`}
-          icon={{ ios: "heart.fill", android: "favorite", web: "favorite" }}
+          label={`Like a ${user.name}`}
+          icon={LikeIcon}
           primary
           onPress={() => onDecide(true)}
         />

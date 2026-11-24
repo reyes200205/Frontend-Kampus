@@ -12,6 +12,8 @@ export type ScreenProps = {
   subtitle?: string;
   /** Acción a la derecha del título (p. ej. botón de filtros o "Crear grupo"). */
   action?: ReactNode;
+  /** Reemplaza el título grande por un encabezado propio (p. ej. el saludo de Descubrir); `title` queda para lectores de pantalla. */
+  header?: ReactNode;
   children: ReactNode;
 };
 
@@ -19,7 +21,7 @@ export type ScreenProps = {
  * Layout base de las pantallas con pestañas: safe area, encabezado, scroll y
  * contenido centrado con ancho máximo para que no se estire en escritorio (RNF-01).
  */
-export function Screen({ title, subtitle, action, children }: ScreenProps) {
+export function Screen({ title, subtitle, action, header, children }: ScreenProps) {
   const theme = useTheme();
   const { isDesktop } = useBreakpoint();
 
@@ -33,16 +35,22 @@ export function Screen({ title, subtitle, action, children }: ScreenProps) {
       >
         <View style={styles.inner}>
           <View style={styles.header}>
-            <View style={styles.flex}>
-              <ThemedText type="title" accessibilityRole="header">
-                {title}
-              </ThemedText>
-              {subtitle && (
-                <ThemedText type="small" themeColor="textSecondary">
-                  {subtitle}
+            {header ? (
+              <View style={styles.flex} accessibilityRole="header" accessibilityLabel={title}>
+                {header}
+              </View>
+            ) : (
+              <View style={styles.flex}>
+                <ThemedText type="title" accessibilityRole="header">
+                  {title}
                 </ThemedText>
-              )}
-            </View>
+                {subtitle && (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {subtitle}
+                  </ThemedText>
+                )}
+              </View>
+            )}
             {action}
           </View>
           {children}

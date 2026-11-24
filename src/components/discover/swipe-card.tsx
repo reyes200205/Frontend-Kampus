@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
-import { useImperativeHandle, useRef, type Ref } from "react";
+import { useImperativeHandle, useRef, useState, type Ref } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Animated, {
@@ -14,8 +14,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
+import { LikeIcon } from "@/components/discover/action-button";
+import { PhotoBars } from "@/components/discover/photo-bars";
 import { ThemedText } from "@/components/themed-text";
-import { FontFamily, FontSize, MinTouchSize, Radius, Spacing } from "@/constants/theme";
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import type { DiscoveryCard } from "@/types/discovery";
 
@@ -41,6 +43,11 @@ export type SwipeCardProps = {
   ref?: Ref<SwipeCardHandle>;
 };
 
+/** "Diana Hernández Gómez" → "Diana": en la tarjeta va el nombre de pila con la edad, como en las apps de citas. */
+export function firstName(name: string) {
+  return name.trim().split(/s+/)[0] ?? name;
+}
+
 /** Fotos en su orden: la 1 es la principal. */
 export function sortedPhotos(card: DiscoveryCard) {
   return [...card.photos].sort((a, b) => a.position - b.position);
@@ -48,8 +55,8 @@ export function sortedPhotos(card: DiscoveryCard) {
 
 /**
  * Tarjeta de perfil que se desliza: a la derecha es "Me interesa" y a la izquierda "Pasar" (RF-05).
- * La tarjeta solo muestra la foto principal: tocarla o deslizar hacia arriba abre el perfil completo
- * con todas las fotos (T-31). Cada tarjeta tiene sus propios valores animados, así que al salir no hay que
+ * Con varias fotos, tocar el lado izquierdo o derecho de la foto cambia de foto (con barras arriba, como en
+ * Instagram); tocar el centro, los datos o deslizar hacia arriba abre el perfil completo (T-31). Cada tarjeta tiene sus propios valores animados, así que al salir no hay que
  * reiniciar nada.
  */
 export function SwipeCard({ card, width, height, isTop, onDecide, onExpand, ref }: SwipeCardProps) {
@@ -84,6 +91,21 @@ export function SwipeCard({ card, width, height, isTop, onDecide, onExpand, ref 
 
   function tapExpand() {
     if (!wasDragging()) expand();
+  }
+
+  const photos = sortedPhotos(card);
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  /** Toque en la foto: a los lados cambia de foto y en el centro abre el perfil. */
+  function tapPhoto(x: number) {
+    if (wasDragging()) return;
+    if (photos.length < 2 || (x > width * 0.3 && x < width * 0.7)) {
+      expand();
+      return;
+    }
+    setPhotoIndex((current) =>
+      x <= width * 0.3 ? Math.max(0, current - 1) : Math.min(photos.length - 1, current + 1),
+    );
   }
 
   const pan = usePanGesture({
@@ -140,7 +162,7 @@ export function SwipeCard({ card, width, height, isTop, onDecide, onExpand, ref 
     opacity: interpolate(translateX.get(), [-threshold, 0], [1, 0], Extrapolation.CLAMP),
   }));
 
-  const photo = sortedPhotos(card)[0]?.temporary_url;
+  const photo = photos[Math.min(photoIndex, photos.length - 1)]?.temporary_url;
   const studies = [card.university?.short_name, card.career, card.semester ? `${card.semester}º semestre` : null]
     .filter(Boolean)
     .join(" · ");
@@ -167,8 +189,8 @@ export function SwipeCard({ card, width, height, isTop, onDecide, onExpand, ref 
 
         {/* El degradado solo cubre la parte de abajo para que la foto se vea casi completa. */}
         <LinearGradient
-          colors={["transparent", `${theme.background}F2`]}
-          locations={[0.55, 0.95]}
+          colors={["transparent", `${theme.background}CC`, theme.background]}
+          locations={[0.45, 0.78, 1]}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
@@ -177,14 +199,27 @@ export function SwipeCard({ card, width, height, isTop, onDecide, onExpand, ref 
         {isTop && (
           <Pressable
             style={styles.photoTap}
-            onPress={tapExpand}
+            onPress={(event) => tapPhoto(event.nativeEvent.locationX)}
             accessible={false}
             importantForAccessibility="no"
           />
         )}
 
+        <PhotoBars count={photos.length} index={Math.min(photoIndex, photos.length - 1)} />
+
+        {/* Como el "Match 86 %" de las apps de citas: lo que comparten, a la vista sobre la foto. */}
+        {card.shared_interests > 0 && (
+          <View style={styles.common} pointerEvents="none">
+            <SymbolView name={{ ios: "sparkles", android: "auto_awesome", web: "auto_awesome" }} size={14} tintColor="#FFFFFF" />
+            <Text style={styles.commonText}>
+              {card.shared_interests === 1 ? "1 interés en común" : `${card.shared_interests} intereses en común`}
+            </Text>
+          </View>
+        )}
+
         <Animated.View style={[styles.stamp, styles.stampLike, { borderColor: theme.accent }, likeStyle]}>
-          <Text style={[styles.stampText, { color: theme.accent }]}>ME INTERESA</Text>
+          <SymbolView name={LikeIcon} size={22} tintColor={theme.accent} />
+          <Text style={[styles.stampText, { color: theme.accent }]}>LIKE</Text>
         </Animated.View>
         <Animated.View style={[styles.stamp, styles.stampPass, { borderColor: theme.text }, passStyle]}>
           <Text style={[styles.stampText, { color: theme.text }]}>PASAR</Text>
@@ -199,48 +234,30 @@ export function SwipeCard({ card, width, height, isTop, onDecide, onExpand, ref 
           style={styles.info}
         >
           <View style={styles.nameRow}>
-            <View style={styles.nameBlock}>
-              <ThemedText type="subtitle" numberOfLines={1} style={styles.name}>
-                {card.name}
-                {card.age ? `, ${card.age}` : ""}
-              </ThemedText>
-              {/* Toda cuenta que aparece en Descubrir verificó su correo institucional (RF-01). */}
-              <View
-                style={[styles.verified, { backgroundColor: theme.accent }]}
-                accessibilityLabel="Correo institucional verificado"
-              >
-                <SymbolView
-                  name={{ ios: "checkmark", android: "check", web: "check" }}
-                  size={12}
-                  tintColor={theme.onAccent}
-                />
-              </View>
-            </View>
-            <View style={[styles.expand, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-              <SymbolView
-                name={{ ios: "chevron.up", android: "keyboard_arrow_up", web: "keyboard_arrow_up" }}
-                size={20}
-                tintColor={theme.text}
-              />
+            <ThemedText numberOfLines={1} style={styles.name}>
+              {firstName(card.name)}
+              {card.age ? `, ${card.age}` : ""}
+            </ThemedText>
+            {/* Toda cuenta que aparece en Descubrir verificó su correo institucional (RF-01). */}
+            <View
+              style={[styles.verified, { backgroundColor: theme.accent }]}
+              accessibilityLabel="Correo institucional verificado"
+            >
+              <SymbolView name={{ ios: "checkmark", android: "check", web: "check" }} size={12} tintColor={theme.onAccent} />
             </View>
           </View>
 
           {studies !== "" && (
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {studies}
-            </ThemedText>
-          )}
-
-          {card.shared_interests > 0 && (
-            <ThemedText type="caption" themeColor="accentText">
-              {card.shared_interests === 1
-                ? "1 interés en común"
-                : `${card.shared_interests} intereses en común`}
-            </ThemedText>
+            <View style={styles.studies}>
+              <SymbolView name={{ ios: "graduationcap", android: "school", web: "school" }} size={14} tintColor={theme.textSecondary} />
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.flex}>
+                {studies}
+              </ThemedText>
+            </View>
           )}
 
           {card.bio && (
-            <ThemedText type="small" numberOfLines={1}>
+            <ThemedText type="small" numberOfLines={2}>
               {card.bio}
             </ThemedText>
           )}
@@ -276,7 +293,10 @@ const styles = StyleSheet.create({
   },
   stamp: {
     position: "absolute",
-    top: Spacing.five,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one + 2,
+    top: Spacing.six,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
     borderWidth: 3,
@@ -298,36 +318,51 @@ const styles = StyleSheet.create({
   info: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
-    paddingBottom: Spacing.four,
-    gap: Spacing.one,
+    // Deja espacio a los botones, que se montan sobre el borde de abajo de la tarjeta.
+    paddingBottom: Spacing.five + Spacing.three,
+    gap: Spacing.one + 2,
+  },
+  flex: {
+    flex: 1,
+  },
+  common: {
+    position: "absolute",
+    top: Spacing.four,
+    left: Spacing.three,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one + 2,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: Radius.full,
+    // Oscuro translúcido para leerse sobre cualquier foto.
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+  },
+  commonText: {
+    color: "#FFFFFF",
+    fontSize: FontSize.caption + 1,
+    fontFamily: FontFamily.semibold,
+  },
+  studies: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one + 2,
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.two,
   },
-  nameBlock: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
   name: {
     flexShrink: 1,
+    fontSize: FontSize.h1,
+    lineHeight: 34,
     fontFamily: FontFamily.bold,
   },
   verified: {
     width: 20,
     height: 20,
     borderRadius: Radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  expand: {
-    width: MinTouchSize - 8,
-    height: MinTouchSize - 8,
-    borderRadius: Radius.full,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
