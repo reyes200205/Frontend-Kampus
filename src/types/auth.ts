@@ -25,12 +25,31 @@ export type RegisterResponse = { message: string; user: User };
 
 export type LoginRequest = { email: string; password: string; device_name?: string };
 
-export type LoginResponse = {
+/** Sesión emitida: la da `POST /login` sin verificación en dos pasos, o `POST /login/two-factor`. */
+export type AuthTokenResponse = {
   token: string;
   token_type: string;
   expires_at: string;
   user: User;
 };
+
+/**
+ * Con la verificación en dos pasos activa (T-47), `POST /login` no da el token: da un reto que se
+ * completa con el código de la app en `POST /login/two-factor`. El reto vence en `expires_in` segundos.
+ */
+export type TwoFactorChallengeResponse = {
+  message: string;
+  two_factor_required: true;
+  challenge_token: string;
+  expires_in: number;
+};
+
+export type LoginResponse = AuthTokenResponse | TwoFactorChallengeResponse;
+
+/** Cuerpo de `POST /login/two-factor`: el código de la app o, si no se tiene a la mano, uno de respaldo. */
+export type TwoFactorLoginRequest =
+  | { challenge_token: string; code: string }
+  | { challenge_token: string; recovery_code: string };
 
 /** Parámetros del enlace del correo de verificación. */
 export type VerifyEmailParams = {
