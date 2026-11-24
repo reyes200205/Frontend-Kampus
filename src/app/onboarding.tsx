@@ -10,12 +10,12 @@ import { ThemedText } from "@/components/themed-text";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { DateField } from "@/components/ui/date-field";
+import { CareerField } from "@/components/profile/career-field";
 import { TextField } from "@/components/ui/text-field";
 import {
   GenderOptions,
   latestBirthdate,
   MaxBioLength,
-  MaxCareerLength,
   MaxSemester,
   MinAge,
   MinInterests,
@@ -336,15 +336,11 @@ export default function OnboardingScreen() {
 
             {current.key === "studies" && (
               <>
-                <TextField
-                  label="Carrera"
-                  icon={{ ios: "graduationcap", android: "school", web: "school" }}
-                  placeholder="Ej. Ingeniería en Software"
+                <CareerField
                   value={career}
-                  onChangeText={setCareer}
+                  onChange={setCareer}
+                  universityId={user?.university_id}
                   error={errors.career}
-                  autoCapitalize="sentences"
-                  maxLength={MaxCareerLength}
                 />
                 <Field label="Semestre" error={errors.semester}>
                   <View style={styles.chips}>
