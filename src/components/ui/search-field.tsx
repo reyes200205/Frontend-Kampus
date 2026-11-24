@@ -2,6 +2,7 @@ import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from "react-native";
 
+import { webNoOutline } from "@/components/ui/web-no-outline";
 import { FontFamily, FontSize, MinTouchSize, Radius, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -41,7 +42,7 @@ export function SearchField({ value, onChangeText, placeholder = "Buscar", style
         autoCorrect={false}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={[styles.input, { color: theme.text }]}
+        style={[styles.input, { color: theme.text }, webNoOutline]}
       />
       {value.length > 0 && (
         <Pressable
