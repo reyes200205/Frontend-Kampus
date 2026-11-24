@@ -146,6 +146,11 @@ export const FontSize = {
   body: 16,
   small: 14,
   caption: 12,
+  /**
+   * Texto dentro de campos editables. En web es 16 porque Safari de iPhone hace zoom automático al enfocar
+   * cualquier campo con letra menor a 16px, y al quitar el teclado la página queda ampliada y descuadrada.
+   */
+  input: Platform.OS === "web" ? 16 : 14,
 } as const;
 
 export type ThemeColor = keyof Palette;

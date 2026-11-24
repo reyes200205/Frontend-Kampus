@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: "100%",
-    fontSize: FontSize.small,
+    fontSize: FontSize.input,
     fontFamily: FontFamily.regular,
     // En web el navegador dibuja su propio contorno al enfocar; el borde del campo ya marca el foco.
     outlineWidth: 0,
