@@ -5,13 +5,13 @@ import { Pressable, StyleSheet, Text, View, type PressableInstance } from 'react
 
 import { KampusLogo } from '@/components/kampus-logo';
 import { Avatar } from '@/components/matches/avatar';
+import { Universities } from '@/constants/management';
 import {
-  isSoonItem,
   ManagementAccountItem,
   ManagementSections,
   ManagementTabItems,
+  isSoonItem,
 } from '@/constants/navigation';
-import { Universities } from '@/constants/management';
 import { FontFamily, MinTouchSize, Radius, Spacing } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { refreshPendingGroups, usePendingGroupsCount } from '@/hooks/use-pending-groups';
@@ -142,9 +142,8 @@ const NavButton = forwardRef<PressableInstance, NavButtonProps>(function NavButt
       accessibilityRole="tab"
       accessibilityState={{ selected: !!isFocused }}
       accessibilityLabel={badge > 0 ? `${label}, ${badgeText} pendientes` : label}
-      style={({ pressed, hovered }) => [
+      style={({ pressed }) => [
         mode === 'sidebar' ? styles.item : mode === 'rail' ? styles.railItem : styles.bottomItem,
-        mode !== 'bottom' && hovered && { backgroundColor: theme.background },
         mode !== 'bottom' && isFocused && { backgroundColor: theme.backgroundSelected },
         pressed && styles.pressed,
       ]}>
@@ -215,9 +214,9 @@ const AccountButton = forwardRef<PressableInstance, AccountButtonProps>(function
       accessibilityRole="tab"
       accessibilityState={{ selected: !!isFocused }}
       accessibilityLabel={`Cuenta de ${user.name}`}
-      style={({ pressed, hovered }) => [
+      style={({ pressed }) => [
         mode === 'sidebar' ? styles.account : styles.railItem,
-        hovered && { backgroundColor: theme.background },
+        pressed && { backgroundColor: theme.background },
         isFocused && { backgroundColor: theme.backgroundSelected },
         pressed && styles.pressed,
       ]}>

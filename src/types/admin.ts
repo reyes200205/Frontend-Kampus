@@ -1,25 +1,21 @@
-/** Panel de gestión del staff (T-44): grupos en revisión (T-42) y cuentas de staff (T-41). */
+/** Tipos del panel administrativo Kampus: grupos, staff, usuarios y reportes. */
 
 import type { UserRole } from "@/types/auth";
 
 export type UniversitySummary = { id: number; name: string; short_name: string };
-
 export type StaffRole = Exclude<UserRole, "student">;
 
-/** Cuenta de `GET /admin/staff`. */
 export type StaffMember = {
   id: number;
   name: string;
   email: string;
   role: StaffRole;
-  /** Universidad del moderador; `null` en un administrador. */
   university: UniversitySummary | null;
   active: boolean;
   deactivated_at: string | null;
   created_at: string;
 };
 
-/** Cuerpo de `POST /admin/staff`. `university_id` solo va en un moderador. */
 export type StaffCreate = {
   name: string;
   email: string;
@@ -31,13 +27,9 @@ export type StaffCreate = {
 };
 
 export type GroupStatus = "pending" | "approved" | "rejected";
-
-/** Filtro de `GET /admin/groups`: un estado o `all` (todos, del más nuevo al más antiguo). */
 export type GroupFilter = GroupStatus | "all";
-
 export type GroupCategory = "deportivo" | "cultural" | "academico" | "social";
 
-/** Grupo de `GET /admin/groups`: lo que ve el estudiante más quién lo creó y quién lo revisó. */
 export type AdminGroup = {
   id: number;
   name: string;
@@ -55,10 +47,100 @@ export type AdminGroup = {
   created_at: string;
 };
 
-/** Cuerpo de `POST /admin/groups` (grupo oficial). `university_id` solo lo manda un administrador. */
 export type OfficialGroupCreate = {
   name: string;
   description?: string;
   category: GroupCategory;
   university_id?: number | null;
+};
+
+export type AdminUserStatus = "all" | "active" | "suspended";
+export type AdminUserSort = "name" | "reports" | "newest";
+
+export type AdminUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  university: UniversitySummary | null;
+  email_verified: boolean;
+  suspended: boolean;
+  suspended_at: string | null;
+  reports_count: number;
+  pending_reports_count: number;
+  created_at: string;
+  profile?: {
+    career: string | null;
+    semester: number | null;
+    bio: string | null;
+    completed: boolean;
+    photos: { id: number; position: number; temporary_url: string }[];
+  } | null;
+  reports?: {
+    id: number;
+    reason: ReportReason;
+    description: string | null;
+    status: ReportStatus;
+    reporter: { id: number; name: string } | null;
+    created_at: string;
+  }[];
+  moderation_history?: {
+    id: number;
+    action: string;
+    reason: string;
+    report_id: number | null;
+    actor: { id: number; name: string } | null;
+    created_at: string;
+  }[];
+};
+
+export type AdminUserQuery = {
+  search?: string;
+  status?: AdminUserStatus;
+  role?: UserRole | "all";
+  university_id?: number | "all";
+  sort?: AdminUserSort;
+};
+
+export type AdminUserModerationBody = {
+  reason: string;
+  /** Obligatorio para moderadores; opcional para administradores. */
+  report_id?: number;
+};
+
+export type ReportReason = "acoso" | "perfil_falso" | "contenido_inapropiado" | "spam" | "otro";
+export type ReportStatus = "pending" | "reviewed" | "dismissed";
+export type ReportFilter = "all" | ReportStatus;
+
+export type AdminReport = {
+  id: number;
+  reason: ReportReason;
+  description: string | null;
+  status: ReportStatus;
+  university: UniversitySummary | null;
+  reporter: { id: number; name: string; email: string } | null;
+  reported: {
+    id: number;
+    name: string;
+    email: string;
+    suspended: boolean;
+    suspended_at: string | null;
+    reports_count: number;
+  };
+  match_id: number | null;
+  reviewed_by: { id: number; name: string } | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+export type AdminReportQuery = {
+  status?: ReportFilter;
+  user_id?: number;
+  reason?: ReportReason | "all";
+};
+
+export type ReviewReportBody = {
+  status: "reviewed" | "dismissed";
+  reason: string;
+  suspend?: boolean;
 };
